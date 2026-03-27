@@ -113,6 +113,14 @@
     return `${days}d`;
   }
 
+  function formatInteractionCount(item) {
+    const count = Number(item.downloadCount || 0);
+    if (item.type === 'text') {
+      return `${count} ${count === 1 ? 'copy' : 'copies'}`;
+    }
+    return `${count} ${count === 1 ? 'download' : 'downloads'}`;
+  }
+
   function createTextFilename() {
     const now = new Date();
     const stamp = [
@@ -156,6 +164,10 @@
 
   function setRoomNote(message) {
     elements.roomNote.textContent = message;
+  }
+
+  function setRoomOpenNote() {
+    setRoomNote('Bubble open. Uploads, copies, and downloads stay live across devices.');
   }
 
   async function apiRequest(url, options) {
@@ -215,7 +227,7 @@
   function updateBubbleCopy() {
     const count = state.items.size;
     if (!state.authenticated) {
-      elements.bubbleHint.textContent = 'Enter the room password to upload, paste, and download.';
+      elements.bubbleHint.textContent = 'Enter the room password to upload, paste, copy, and download.';
       return;
     }
     if (!count) {
@@ -270,6 +282,13 @@
     mainButton.type = 'button';
     mainButton.dataset.action = 'download';
     mainButton.dataset.itemId = item.id;
+    mainButton.title = item.type === 'text' ? 'Copy to clipboard' : 'Download';
+    mainButton.setAttribute(
+      'aria-label',
+      item.type === 'text'
+        ? `Copy ${item.displayName} to the clipboard`
+        : `Download ${item.displayName}`
+    );
 
     const type = document.createElement('span');
     type.className = 'bubble-item-type';
@@ -282,8 +301,9 @@
     const meta = document.createElement('div');
     meta.className = 'bubble-item-meta';
     meta.innerHTML = [
+      `<span>${item.type === 'text' ? 'Tap to copy' : 'Tap to download'}</span>`,
       `<span>${formatBytes(item.size)}</span>`,
-      `<span>${item.downloadCount} downloads</span>`,
+      `<span>${formatInteractionCount(item)}</span>`,
       `<span>${formatWhen(item.createdAt)}</span>`
     ].join('');
 
@@ -377,7 +397,7 @@
       setSyncState('Offline', false);
       setRoomNote('Bubble locked. Enter the room password to begin.');
     } else {
-      setRoomNote('Bubble open. Uploads and downloads stay live across devices.');
+      setRoomOpenNote();
     }
 
     updateBubbleCopy();
@@ -536,7 +556,7 @@
       }
     }
 
-    setRoomNote('Bubble open. Uploads and downloads stay live across devices.');
+    setRoomOpenNote();
     if (successCount) {
       showToast(successCount === 1 ? '1 item is now floating.' : `${successCount} items are now floating.`);
     }
@@ -561,12 +581,88 @@
       });
       mergeItem(payload.item);
       showToast('Text is now floating.');
-      setRoomNote('Bubble open. Uploads and downloads stay live across devices.');
+      setRoomOpenNote();
       return payload.item;
     } catch (error) {
-      setRoomNote('Bubble open. Uploads and downloads stay live across devices.');
+      setRoomOpenNote();
       showToast(error.message || 'Text could not be uploaded.', 'error');
       throw error;
+    }
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return;
+      } catch (error) {
+      }
+    }
+
+    const helper = document.createElement('textarea');
+    helper.value = text;
+    helper.setAttribute('readonly', 'true');
+    helper.style.position = 'fixed';
+    helper.style.top = '0';
+    helper.style.left = '-9999px';
+    helper.style.opacity = '0';
+    document.body.appendChild(helper);
+    helper.focus();
+    helper.select();
+    helper.setSelectionRange(0, helper.value.length);
+
+    let copied = false;
+    try {
+      copied = Boolean(document.execCommand && document.execCommand('copy'));
+    } finally {
+      helper.remove();
+    }
+
+    if (!copied) {
+      throw new Error('Clipboard access is unavailable on this device.');
+    }
+  }
+
+  async function copyTextItem(item) {
+    setRoomNote('Copying text...');
+
+    try {
+      const payload = await apiRequest(item.contentPath || `/api/items/${item.id}/content`);
+      await copyTextToClipboard(payload.text || '');
+
+      let consumeError = null;
+      try {
+        const consumePayload = await apiRequest(item.consumePath || `/api/items/${item.id}/consume`, {
+          method: 'POST'
+        });
+        if (consumePayload.deleted) {
+          removeItem(item.id);
+        } else if (consumePayload.item) {
+          mergeItem(consumePayload.item);
+        }
+      } catch (error) {
+        consumeError = error;
+        if (error.status === 401) {
+          lockRoom('Session expired. Enter the room password again.');
+        } else if (error.status === 404) {
+          removeItem(item.id);
+        }
+      }
+
+      showToast(`${payload.displayName || item.displayName} copied to the clipboard.`);
+      if (consumeError) {
+        showToast('Clipboard copy worked, but the room could not confirm it.', 'error');
+      }
+    } catch (error) {
+      if (error.status === 401) {
+        lockRoom('Session expired. Enter the room password again.');
+      } else {
+        showToast(error.message || 'Text could not be copied.', 'error');
+      }
+    } finally {
+      if (state.authenticated) {
+        setRoomOpenNote();
+      }
     }
   }
 
@@ -619,11 +715,22 @@
     event.stopPropagation();
 
     if (action === 'download') {
+      if (item.type === 'text') {
+        button.disabled = true;
+        try {
+          await copyTextItem(item);
+        } finally {
+          button.disabled = false;
+        }
+        return;
+      }
+
       window.location.href = item.downloadPath;
       return;
     }
 
     if (action === 'delete') {
+      button.disabled = true;
       try {
         await apiRequest(`/api/items/${itemId}`, {
           method: 'DELETE'
@@ -632,6 +739,8 @@
         showToast(`${item.displayName} removed.`);
       } catch (error) {
         showToast(error.message || 'Item could not be removed.', 'error');
+      } finally {
+        button.disabled = false;
       }
     }
   }

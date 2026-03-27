@@ -159,7 +159,7 @@ test('strict origin mode still rejects unknown origins while allowing expected h
   }
 });
 
-test('text upload broadcasts live updates and increments download counts', async () => {
+test('text copy flow exposes content and confirms usage after clipboard success', async () => {
   const fixture = await createFixture();
 
   try {
@@ -188,15 +188,98 @@ test('text upload broadcasts live updates and increments download counts', async
     assert.equal(response.status, 201);
     const created = await createdPromise;
     assert.equal(created.item.displayName, 'note.txt');
+    assert.equal(created.item.contentPath, `/api/items/${created.item.id}/content`);
+    assert.equal(created.item.consumePath, `/api/items/${created.item.id}/consume`);
 
-    response = await fixture.request(created.item.downloadPath);
+    response = await fixture.request(created.item.contentPath);
     assert.equal(response.status, 200);
-    const downloadedText = await response.text();
-    assert.equal(downloadedText, 'hello from the bubble');
+    const contentPayload = await response.json();
+    assert.equal(contentPayload.displayName, 'note.txt');
+    assert.equal(contentPayload.text, 'hello from the bubble');
 
-    const updated = await waitForSocketMessage(socket, 'item-updated');
+    response = await fixture.request('/api/items');
+    assert.equal(response.status, 200);
+    let listPayload = await response.json();
+    assert.equal(listPayload.items[0].downloadCount, 0);
+
+    const updatedPromise = waitForSocketMessage(socket, 'item-updated');
+    response = await fixture.request(created.item.consumePath, {
+      method: 'POST'
+    });
+    assert.equal(response.status, 200);
+    const consumePayload = await response.json();
+    assert.equal(consumePayload.deleted, false);
+    assert.equal(consumePayload.item.downloadCount, 1);
+
+    const updated = await updatedPromise;
     assert.equal(updated.item.downloadCount, 1);
+
+    response = await fixture.request('/api/items');
+    assert.equal(response.status, 200);
+    listPayload = await response.json();
+    assert.equal(listPayload.items[0].downloadCount, 1);
     socket.close();
+  } finally {
+    await fixture.close();
+  }
+});
+
+test('first-download text items remain available until the copy is confirmed', async () => {
+  const fixture = await createFixture({
+    reauthWindowMs: 1000
+  });
+
+  try {
+    await fixture.login();
+
+    let response = await fixture.request('/api/settings', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        lifetimeMode: 'first-download',
+        expiryHours: 24,
+        themeDefault: 'auto'
+      })
+    });
+    assert.equal(response.status, 200);
+
+    response = await fixture.request('/api/items/text', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: 'copy-once.txt',
+        text: 'copy me once'
+      })
+    });
+    assert.equal(response.status, 201);
+    const uploadPayload = await response.json();
+
+    response = await fixture.request(uploadPayload.item.contentPath);
+    assert.equal(response.status, 200);
+    const contentPayload = await response.json();
+    assert.equal(contentPayload.text, 'copy me once');
+
+    response = await fixture.request('/api/items');
+    assert.equal(response.status, 200);
+    const listPayload = await response.json();
+    assert.equal(listPayload.items.length, 1);
+
+    response = await fixture.request(uploadPayload.item.consumePath, {
+      method: 'POST'
+    });
+    assert.equal(response.status, 200);
+    const consumePayload = await response.json();
+    assert.equal(consumePayload.deleted, true);
+
+    await waitFor(async () => {
+      const itemsResponse = await fixture.request('/api/items');
+      const afterConsume = await itemsResponse.json();
+      assert.equal(afterConsume.items.length, 0);
+    });
   } finally {
     await fixture.close();
   }

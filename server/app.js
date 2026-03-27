@@ -40,6 +40,7 @@ function matchDeleteItemPath(pathname) {
 }
 
 function mapItem(item) {
+  const isText = item.type === 'text';
   return {
     id: item.id,
     type: item.type,
@@ -50,7 +51,9 @@ function mapItem(item) {
     expiresAt: item.expiresAt,
     downloadCount: Number(item.downloadCount || 0),
     deletionPolicy: item.deletionPolicy,
-    downloadPath: `/api/items/${item.id}/download`
+    downloadPath: `/api/items/${item.id}/download`,
+    contentPath: isText ? `/api/items/${item.id}/content` : null,
+    consumePath: isText ? `/api/items/${item.id}/consume` : null
   };
 }
 
@@ -579,6 +582,70 @@ async function createApp(config) {
     }
   }
 
+  async function handleTextContent(req, res, itemId) {
+    requireAuth(req);
+    await pruneExpiredAndBroadcast();
+
+    const item = store.getItemById(itemId);
+    if (!item) {
+      throw createHttpError(404, 'Item not found.');
+    }
+    if (item.type !== 'text') {
+      throw createHttpError(400, 'Only text items can be copied.');
+    }
+
+    const filePath = store.getFilePath(item);
+    let text;
+    try {
+      text = await fs.promises.readFile(filePath, 'utf8');
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw createHttpError(404, 'Text item is missing.');
+      }
+      throw error;
+    }
+
+    sendJson(res, 200, {
+      text,
+      displayName: item.displayName
+    });
+  }
+
+  async function handleTextConsume(req, res, itemId) {
+    checkApiLimit(req);
+    requireAuth(req);
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
+      throw createHttpError(403, 'Origin not allowed.');
+    }
+
+    await pruneExpiredAndBroadcast();
+    const item = store.getItemById(itemId);
+    if (!item) {
+      throw createHttpError(404, 'Item not found.');
+    }
+    if (item.type !== 'text') {
+      throw createHttpError(400, 'Only text items can be consumed this way.');
+    }
+
+    const updated = await store.recordDownload(item.id);
+    if (item.deletionPolicy === 'first-download') {
+      await store.deleteItem(item.id);
+      broadcast('item-deleted', { id: item.id, reason: 'first-download' });
+      sendJson(res, 200, {
+        consumed: true,
+        deleted: true
+      });
+      return;
+    }
+
+    broadcast('item-updated', { item: mapItem(updated) });
+    sendJson(res, 200, {
+      consumed: true,
+      deleted: false,
+      item: mapItem(updated)
+    });
+  }
+
   async function handleDeleteItem(req, res, itemId) {
     checkApiLimit(req);
     requireAuth(req);
@@ -617,6 +684,12 @@ async function createApp(config) {
         return;
       }
 
+      const contentMatch = matchItemPath(pathname, 'content');
+      if (contentMatch) {
+        await handleTextContent(req, res, contentMatch[1]);
+        return;
+      }
+
       const downloadMatch = matchItemPath(pathname, 'download');
       if (downloadMatch) {
         await handleDownload(req, res, downloadMatch[1]);
@@ -642,6 +715,12 @@ async function createApp(config) {
 
     if (req.method === 'POST' && pathname === '/api/items/text') {
       await handleTextUpload(req, res);
+      return;
+    }
+
+    const consumeMatch = req.method === 'POST' ? matchItemPath(pathname, 'consume') : null;
+    if (consumeMatch) {
+      await handleTextConsume(req, res, consumeMatch[1]);
       return;
     }
 
