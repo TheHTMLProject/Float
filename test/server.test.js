@@ -49,11 +49,12 @@ async function createFixture(overrides = {}) {
     return response;
   }
 
-  async function login(password = 'bubble-pass') {
+  async function login(password = 'bubble-pass', headers = {}) {
     const response = await request('/api/auth/login', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...headers
       },
       body: JSON.stringify({ password })
     });
@@ -122,7 +123,9 @@ test('login protects the room and sets a session cookie', async () => {
     response = await fixture.login('wrong-pass');
     assert.equal(response.status, 401);
 
-    response = await fixture.login();
+    response = await fixture.login('bubble-pass', {
+      Origin: fixture.baseUrl.replace('http://', 'https://')
+    });
     assert.equal(response.status, 200);
     assert.match(fixture.getCookie(), /^float_session=/);
 

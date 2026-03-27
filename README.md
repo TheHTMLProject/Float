@@ -65,9 +65,11 @@ The installer writes `config/runtime.json`, installs dependencies, creates a `fl
 - `npm start` starts the Float server
 - `npm test` runs the automated server tests
 - `npm run init-config -- ...` writes a hashed runtime config
+- `./update-after-pull.sh` refreshes dependencies, reruns tests, and restarts `float.service` when present
 
 ## Notes
 
 - Runtime config is intentionally not committed and lives at `config/runtime.json`
 - For public internet use, put Float behind HTTPS with a reverse proxy
+- If you use a reverse proxy, forward the original `Host` and `X-Forwarded-Proto` headers when possible
 - The server targets Node.js 18 or newer

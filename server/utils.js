@@ -217,17 +217,34 @@ function isAllowedOrigin(req, configuredBaseUrl) {
     return true;
   }
 
-  const allowed = new Set([getRequestOrigin(req)]);
+  let incomingOrigin;
+  try {
+    incomingOrigin = new URL(origin);
+  } catch (error) {
+    return false;
+  }
+
+  const allowed = [getRequestOrigin(req)];
 
   if (configuredBaseUrl) {
     try {
-      allowed.add(new URL(configuredBaseUrl).origin);
+      allowed.push(new URL(configuredBaseUrl).origin);
     } catch (error) {
       return false;
     }
   }
 
-  return allowed.has(origin);
+  return allowed.some((candidate) => {
+    try {
+      const parsedCandidate = new URL(candidate);
+      return (
+        parsedCandidate.origin === incomingOrigin.origin ||
+        parsedCandidate.host === incomingOrigin.host
+      );
+    } catch (error) {
+      return false;
+    }
+  });
 }
 
 function toIsoTimestamp(value) {
