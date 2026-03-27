@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Float</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=()" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="ambient ambient-one"></div>
+      <div class="ambient ambient-two"></div>
+      <div class="ambient ambient-three"></div>
+
+      <header class="edge-bar">
+        <div class="brand-pill">
+          <span class="brand-mark"></span>
+          <span class="brand-text">Float</span>
+        </div>
+
+        <div class="edge-actions">
+          <button class="ghost-chip" id="sync-chip" type="button" disabled>
+            Offline
+          </button>
+          <button class="ghost-chip" id="add-chip" type="button">
+            Add
+          </button>
+          <button class="ghost-chip" id="settings-chip" type="button">
+            Settings
+          </button>
+        </div>
+      </header>
+
+      <main class="room-shell">
+        <section class="bubble-stage" id="bubble-stage" tabindex="0" aria-label="Float room">
+          <div class="bubble-backdrop"></div>
+          <div class="bubble-rim"></div>
+          <div class="bubble-ripple bubble-ripple-a"></div>
+          <div class="bubble-ripple bubble-ripple-b"></div>
+          <div class="bubble-shine bubble-shine-a"></div>
+          <div class="bubble-shine bubble-shine-b"></div>
+          <div class="drop-halo" id="drop-halo"></div>
+
+          <div class="bubble-copy" id="bubble-copy">
+            <p class="eyebrow">Shared transfer bubble</p>
+            <h1>Drop files, paste text, let them drift.</h1>
+            <p id="bubble-hint">
+              Drag files in, paste copied text, or tap the bubble on mobile.
+            </p>
+          </div>
+
+          <div class="bubble-items" id="bubble-items"></div>
+
+          <div class="bubble-empty" id="bubble-empty" aria-hidden="true">
+            <div class="empty-orb"></div>
+            <p>Nothing is floating yet.</p>
+          </div>
+        </section>
+      </main>
+
+      <div class="room-foot">
+        <div class="foot-pill" id="room-note">
+          Bubble locked. Enter the room password to begin.
+        </div>
+      </div>
+
+      <section class="overlay overlay-lock" id="lock-overlay" aria-label="Password entry">
+        <div class="overlay-card">
+          <p class="eyebrow">Private room</p>
+          <h2>Enter the bubble</h2>
+          <p>
+            One shared password unlocks uploads, downloads, and the floating room.
+          </p>
+
+          <form id="login-form" class="stack-form">
+            <label class="field">
+              <span>Password</span>
+              <input
+                id="login-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button class="primary-button" type="submit" id="login-submit">
+              Enter
+            </button>
+          </form>
+
+          <p class="inline-status" id="login-status"></p>
+        </div>
+      </section>
+
+      <input id="file-input" type="file" multiple hidden />
+
+      <section class="modal-shell hidden" id="settings-modal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-modal="true"></div>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+          <button class="modal-close" type="button" id="settings-close" aria-label="Close">
+            Close
+          </button>
+
+          <div class="modal-lock" id="settings-lock">
+            <p class="eyebrow">Protected settings</p>
+            <h2 id="settings-title">Unlock room controls</h2>
+            <p>
+              Confirm the shared password to change bubble behavior or reveal the share card.
+            </p>
+
+            <form id="reauth-form" class="stack-form">
+              <label class="field">
+                <span>Password</span>
+                <input
+                  id="reauth-password"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                />
+              </label>
+              <button class="primary-button" type="submit" id="reauth-submit">
+                Unlock settings
+              </button>
+            </form>
+
+            <p class="inline-status" id="reauth-status"></p>
+          </div>
+
+          <div class="modal-content hidden" id="settings-content">
+            <div class="modal-header">
+              <div>
+                <p class="eyebrow">Room settings</p>
+                <h2>Shape the bubble</h2>
+              </div>
+              <button class="ghost-chip" type="button" id="refresh-settings">
+                Refresh
+              </button>
+            </div>
+
+            <form id="settings-form" class="settings-grid">
+              <label class="field">
+                <span>Lifetime mode</span>
+                <select id="lifetime-mode" name="lifetimeMode">
+                  <option value="manual">Stay until deleted</option>
+                  <option value="first-download">Delete on first download</option>
+                  <option value="expiry">Expire automatically</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Expiry hours</span>
+                <input
+                  id="expiry-hours"
+                  name="expiryHours"
+                  type="number"
+                  min="1"
+                  max="168"
+                  step="1"
+                />
+              </label>
+
+              <label class="field">
+                <span>Theme mode</span>
+                <select id="theme-default" name="themeDefault">
+                  <option value="auto">Auto</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </label>
+
+              <div class="stats-card">
+                <p class="stats-label">Room storage</p>
+                <strong id="storage-summary">0 B of 0 B</strong>
+                <span id="storage-detail">0 items</span>
+              </div>
+
+              <div class="stats-card">
+                <p class="stats-label">Per upload limit</p>
+                <strong id="upload-limit">0 B</strong>
+                <span>Large enough for drops, small enough for safety.</span>
+              </div>
+
+              <div class="share-card">
+                <div class="share-copy">
+                  <p class="stats-label">Share link</p>
+                  <a id="share-url" href="/" target="_blank" rel="noopener noreferrer">/</a>
+                </div>
+                <div class="share-qr" id="share-qr" aria-hidden="true"></div>
+              </div>
+
+              <div class="action-row">
+                <button class="primary-button" type="submit" id="save-settings">
+                  Save room settings
+                </button>
+                <button class="danger-button" type="button" id="clear-bubble">
+                  Clear bubble
+                </button>
+              </div>
+            </form>
+
+            <p class="inline-status" id="settings-status"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="sheet-shell hidden" id="mobile-sheet" aria-hidden="true">
+        <button class="sheet-backdrop" type="button" data-close-sheet="true"></button>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+          <div class="sheet-handle"></div>
+          <p class="eyebrow">Mobile upload</p>
+          <h2 id="sheet-title">Drop something into the bubble</h2>
+          <div class="sheet-actions">
+            <button class="primary-button" type="button" id="mobile-upload-file">
+              Upload file
+            </button>
+            <button class="ghost-chip wide-chip" type="button" id="mobile-paste-text">
+              Paste text
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="sheet-shell hidden" id="paste-sheet" aria-hidden="true">
+        <button class="sheet-backdrop" type="button" data-close-paste="true"></button>
+        <div class="sheet-card paste-card" role="dialog" aria-modal="true" aria-labelledby="paste-title">
+          <div class="sheet-handle"></div>
+          <p class="eyebrow">Text drop</p>
+          <h2 id="paste-title">Paste copied text</h2>
+          <form id="paste-form" class="stack-form">
+            <label class="field">
+              <span>Filename</span>
+              <input id="paste-name" name="name" type="text" value="pasted-text.txt" />
+            </label>
+            <label class="field">
+              <span>Text</span>
+              <textarea
+                id="paste-text"
+                name="text"
+                rows="8"
+                placeholder="Paste or type text here"
+                required
+              ></textarea>
+            </label>
+            <button class="primary-button" type="submit" id="paste-submit">
+              Float this text
+            </button>
+          </form>
+          <p class="inline-status" id="paste-status"></p>
+        </div>
+      </section>
+
+      <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+    </div>
+
+    <script src="/script.js" defer></script>
+  </body>
+</html>

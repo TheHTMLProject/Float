@@ -1,0 +1,5 @@
+AGENTS.md
+node_modules/
+storage/
+config/runtime.json
+npm-debug.log*

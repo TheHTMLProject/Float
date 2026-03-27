@@ -1,0 +1,15 @@
+[Unit]
+Description=Float Bubble Room
+After=network.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+WorkingDirectory=__WORKDIR__
+ExecStart=__NODE_BIN__ __WORKDIR__/server/index.js --config __CONFIG_PATH__
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
