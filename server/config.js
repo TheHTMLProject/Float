@@ -6,6 +6,7 @@ const DEFAULT_CONFIG = {
   bindHost: '0.0.0.0',
   port: 3000,
   publicBaseUrl: '',
+  strictOriginCheck: false,
   storagePath: path.resolve(process.cwd(), 'storage'),
   secureCookies: false,
   sessionTtlMs: 7 * 24 * 60 * 60 * 1000,
@@ -51,6 +52,7 @@ function mergeConfig(input = {}) {
     bindHost: String(input.bindHost || DEFAULT_CONFIG.bindHost),
     port: Number(input.port || DEFAULT_CONFIG.port),
     publicBaseUrl,
+    strictOriginCheck: Boolean(input.strictOriginCheck),
     storagePath: path.resolve(String(input.storagePath || DEFAULT_CONFIG.storagePath)),
     secureCookies: Boolean(
       input.secureCookies !== undefined

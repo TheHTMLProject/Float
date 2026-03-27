@@ -124,7 +124,7 @@ test('login protects the room and sets a session cookie', async () => {
     assert.equal(response.status, 401);
 
     response = await fixture.login('bubble-pass', {
-      Origin: fixture.baseUrl.replace('http://', 'https://')
+      Origin: 'https://example.com'
     });
     assert.equal(response.status, 200);
     assert.match(fixture.getCookie(), /^float_session=/);
@@ -133,6 +133,27 @@ test('login protects the room and sets a session cookie', async () => {
     assert.equal(response.status, 200);
     const payload = await response.json();
     assert.deepEqual(payload.items, []);
+  } finally {
+    await fixture.close();
+  }
+});
+
+test('strict origin mode still rejects unknown origins while allowing expected hosts', async () => {
+  const fixture = await createFixture({
+    strictOriginCheck: true,
+    publicBaseUrl: 'https://float.example.com'
+  });
+
+  try {
+    let response = await fixture.login('bubble-pass', {
+      Origin: 'https://evil.example.com'
+    });
+    assert.equal(response.status, 403);
+
+    response = await fixture.login('bubble-pass', {
+      Origin: 'https://float.example.com'
+    });
+    assert.equal(response.status, 200);
   } finally {
     await fixture.close();
   }

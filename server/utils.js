@@ -211,7 +211,11 @@ function getRequestOrigin(req) {
   return `${getRequestProtocol(req)}://${getRequestHost(req)}`;
 }
 
-function isAllowedOrigin(req, configuredBaseUrl) {
+function isAllowedOrigin(req, configuredBaseUrl, strictOriginCheck = false) {
+  if (!strictOriginCheck) {
+    return true;
+  }
+
   const origin = req.headers.origin;
   if (!origin) {
     return true;

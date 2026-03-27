@@ -72,4 +72,5 @@ The installer writes `config/runtime.json`, installs dependencies, creates a `fl
 - Runtime config is intentionally not committed and lives at `config/runtime.json`
 - For public internet use, put Float behind HTTPS with a reverse proxy
 - If you use a reverse proxy, forward the original `Host` and `X-Forwarded-Proto` headers when possible
+- Origin enforcement is relaxed by default to avoid blocking common proxy setups. If you want strict origin checking, add `"strictOriginCheck": true` to `config/runtime.json`
 - The server targets Node.js 18 or newer

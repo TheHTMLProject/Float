@@ -247,7 +247,7 @@ async function createApp(config) {
   async function handleLogin(req, res) {
     checkApiLimit(req);
     ensureAuthAllowed(req);
-    if (!isAllowedOrigin(req, config.publicBaseUrl)) {
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
       throw createHttpError(403, 'Origin not allowed.');
     }
 
@@ -290,7 +290,7 @@ async function createApp(config) {
   async function handleReauth(req, res, session) {
     checkApiLimit(req);
     ensureAuthAllowed(req);
-    if (!isAllowedOrigin(req, config.publicBaseUrl)) {
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
       throw createHttpError(403, 'Origin not allowed.');
     }
 
@@ -334,7 +334,7 @@ async function createApp(config) {
   async function handleSettingsPatch(req, res, session) {
     checkApiLimit(req);
     requireReauth(session);
-    if (!isAllowedOrigin(req, config.publicBaseUrl)) {
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
       throw createHttpError(403, 'Origin not allowed.');
     }
 
@@ -369,7 +369,7 @@ async function createApp(config) {
   async function handleTextUpload(req, res) {
     checkApiLimit(req);
     requireAuth(req);
-    if (!isAllowedOrigin(req, config.publicBaseUrl)) {
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
       throw createHttpError(403, 'Origin not allowed.');
     }
 
@@ -398,7 +398,7 @@ async function createApp(config) {
   async function handleFileUpload(req, res) {
     checkApiLimit(req);
     requireAuth(req);
-    if (!isAllowedOrigin(req, config.publicBaseUrl)) {
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
       throw createHttpError(403, 'Origin not allowed.');
     }
 
@@ -582,7 +582,7 @@ async function createApp(config) {
   async function handleDeleteItem(req, res, itemId) {
     checkApiLimit(req);
     requireAuth(req);
-    if (!isAllowedOrigin(req, config.publicBaseUrl)) {
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
       throw createHttpError(403, 'Origin not allowed.');
     }
 
@@ -690,7 +690,7 @@ async function createApp(config) {
     }
 
     try {
-      if (!isAllowedOrigin(req, config.publicBaseUrl)) {
+      if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
         throw createHttpError(403, 'Origin not allowed.');
       }
       const session = requireAuth(req);
