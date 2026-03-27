@@ -15,31 +15,6 @@ prompt_default() {
   printf '%s' "$answer"
 }
 
-prompt_password() {
-  local first
-  local second
-
-  while true; do
-    read -r -s -p "Shared room password: " first
-    printf '\n'
-    read -r -s -p "Confirm password: " second
-    printf '\n'
-
-    if [[ -z "$first" ]]; then
-      printf 'Password cannot be empty.\n' >&2
-      continue
-    fi
-
-    if [[ "$first" != "$second" ]]; then
-      printf 'Passwords did not match. Try again.\n' >&2
-      continue
-    fi
-
-    printf '%s' "$first"
-    return 0
-  done
-}
-
 write_service_file() {
   local service_path="$1"
   local service_user="$2"
@@ -82,15 +57,10 @@ fi
 
 printf '\nFloat Bubble Room installer\n\n'
 
-BIND_HOST="$(prompt_default 'Bind host' '0.0.0.0')"
+PUBLIC_HOSTNAME="$(prompt_default 'Public hostname' 'localhost')"
 PORT="$(prompt_default 'Port' '3000')"
-PUBLIC_BASE_URL="$(prompt_default 'Public base URL (blank allowed)' '')"
-if [[ -z "$PUBLIC_BASE_URL" ]]; then
-  PUBLIC_BASE_URL=""
-fi
-STORAGE_PATH="$(prompt_default 'Storage path' "$REPO_DIR/storage")"
-SERVICE_USER="$(prompt_default 'systemd service user' "${SUDO_USER:-$USER}")"
-PASSWORD="$(prompt_password)"
+SERVICE_USER="${SUDO_USER:-$USER}"
+PUBLIC_BASE_URL="http://$PUBLIC_HOSTNAME:$PORT"
 
 mkdir -p "$REPO_DIR/config"
 
@@ -98,14 +68,10 @@ printf '\nInstalling dependencies...\n'
 npm install --omit=dev
 
 printf 'Writing runtime config...\n'
-FLOAT_PASSWORD="$PASSWORD" node "$REPO_DIR/scripts/init-config.js" \
+node "$REPO_DIR/scripts/init-config.js" \
   --output "$CONFIG_PATH" \
-  --bind-host "$BIND_HOST" \
-  --port "$PORT" \
-  --public-base-url "$PUBLIC_BASE_URL" \
-  --storage-path "$STORAGE_PATH"
-
-unset PASSWORD
+  --hostname "$PUBLIC_HOSTNAME" \
+  --port "$PORT"
 
 NODE_BIN="$(command -v node)"
 SERVICE_NAME="float.service"
@@ -139,13 +105,6 @@ fi
 rm -f "$SERVICE_TEMP"
 
 printf '\nFloat is listening with config at %s\n' "$CONFIG_PATH"
-if [[ -n "$PUBLIC_BASE_URL" ]]; then
-  printf 'Share URL: %s\n' "$PUBLIC_BASE_URL"
-else
-  DISPLAY_HOST="$BIND_HOST"
-  if [[ "$DISPLAY_HOST" == "0.0.0.0" ]]; then
-    DISPLAY_HOST="localhost"
-  fi
-  printf 'Share URL: http://%s:%s\n' "$DISPLAY_HOST" "$PORT"
-fi
+printf 'Share URL: %s\n' "$PUBLIC_BASE_URL"
+printf 'First-run onboarding in the browser will create the shared password.\n'
 printf 'For public exposure, place Float behind HTTPS with a reverse proxy.\n'

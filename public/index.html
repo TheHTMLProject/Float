@@ -45,19 +45,10 @@
           <div class="bubble-shine bubble-shine-b"></div>
           <div class="drop-halo" id="drop-halo"></div>
 
-          <div class="bubble-copy" id="bubble-copy">
-            <p class="eyebrow">Shared transfer bubble</p>
-            <h1>Drop files, paste text, let them drift.</h1>
-            <p id="bubble-hint">
-              Drag files in, paste copied text, or tap the bubble on mobile.
-            </p>
-          </div>
-
           <div class="bubble-items" id="bubble-items"></div>
 
           <div class="bubble-empty" id="bubble-empty" aria-hidden="true">
             <div class="empty-orb"></div>
-            <p>Nothing is floating yet.</p>
           </div>
         </section>
       </main>
@@ -67,6 +58,106 @@
           Bubble locked. Enter the room password to begin.
         </div>
       </div>
+
+      <section
+        class="overlay overlay-onboarding hidden"
+        id="onboarding-overlay"
+        aria-label="First-run setup"
+      >
+        <div class="overlay-card onboarding-card">
+          <div class="onboarding-progress">
+            <p class="eyebrow" id="onboarding-step-label">Step 1 of 3</p>
+            <div class="onboarding-progress-track" aria-hidden="true">
+              <span class="onboarding-progress-bar" id="onboarding-progress-bar"></span>
+            </div>
+          </div>
+
+          <section class="onboarding-panel" data-step="0">
+            <h2>Create the shared room password</h2>
+            <p>
+              Float only asks for a password once. Everyone who uses this room will enter the
+              same one after setup is done.
+            </p>
+
+            <form id="onboarding-form" class="stack-form">
+              <label class="field">
+                <span>Shared password</span>
+                <input
+                  id="onboarding-password"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                />
+              </label>
+              <label class="field">
+                <span>Confirm password</span>
+                <input
+                  id="onboarding-password-confirm"
+                  name="passwordConfirm"
+                  type="password"
+                  autocomplete="new-password"
+                  required
+                />
+              </label>
+              <button class="primary-button" type="submit" id="onboarding-submit">
+                Save password
+              </button>
+            </form>
+
+            <p class="inline-status" id="onboarding-status"></p>
+          </section>
+
+          <section class="onboarding-panel hidden" data-step="1">
+            <h2>How Float works</h2>
+            <div class="tour-grid">
+              <article class="tour-card">
+                <strong>Drag, drop, or tap Add</strong>
+                <p>Desktop users can drop files into the bubble. On mobile, Add opens the upload sheet.</p>
+              </article>
+              <article class="tour-card">
+                <strong>Paste text straight in</strong>
+                <p>Paste copied text anywhere in the room and Float turns it into a drifting text asset.</p>
+              </article>
+              <article class="tour-card">
+                <strong>Text copies, files download</strong>
+                <p>Tap a pasted text asset to copy it to the clipboard. Tap a file asset to download it.</p>
+              </article>
+            </div>
+            <div class="action-row onboarding-actions">
+              <button class="primary-button" type="button" id="onboarding-tour-next">
+                Next
+              </button>
+            </div>
+          </section>
+
+          <section class="onboarding-panel hidden" data-step="2">
+            <h2>Settings shape the room</h2>
+            <div class="tour-grid">
+              <article class="tour-card">
+                <strong>Lifetime mode and expiry</strong>
+                <p>Keep assets until you delete them, remove them after the first grab, or expire them on a timer.</p>
+              </article>
+              <article class="tour-card">
+                <strong>Theme and share link</strong>
+                <p>Switch the room theme, copy the share URL, and scan the QR code from the settings sheet.</p>
+              </article>
+              <article class="tour-card">
+                <strong>Clear bubble when needed</strong>
+                <p>Room controls also let you clear every floating asset at once after re-entering the password.</p>
+              </article>
+            </div>
+            <div class="action-row onboarding-actions">
+              <button class="ghost-chip" type="button" id="onboarding-settings-back">
+                Back
+              </button>
+              <button class="primary-button" type="button" id="onboarding-finish">
+                Enter Float
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
 
       <section class="overlay overlay-lock" id="lock-overlay" aria-label="Password entry">
         <div class="overlay-card">

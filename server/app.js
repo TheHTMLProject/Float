@@ -6,12 +6,14 @@ const QRCode = require('qrcode');
 const { WebSocketServer } = require('ws');
 const { pipeline } = require('stream/promises');
 const { DataStore } = require('./store');
+const { mergeConfig } = require('./config');
 const {
   createHttpError,
   formatBytes,
   getMimeType,
   getRequestOrigin,
   isAllowedOrigin,
+  hashPassword,
   parseCookies,
   randomId,
   readJsonBody,
@@ -19,7 +21,8 @@ const {
   sendJson,
   serializeCookie,
   setSecurityHeaders,
-  verifyPassword
+  verifyPassword,
+  writeJsonAtomic
 } = require('./utils');
 
 function getClientKey(req) {
@@ -57,7 +60,8 @@ function mapItem(item) {
   };
 }
 
-async function createApp(config) {
+async function createApp(config, options = {}) {
+  const configPath = options.configPath || '';
   const store = new DataStore(config);
   await store.init();
 
@@ -142,6 +146,38 @@ async function createApp(config) {
     return session;
   }
 
+  function createSessionRecord() {
+    const sessionId = randomId(24);
+    const session = {
+      id: sessionId,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + config.sessionTtlMs,
+      reauthUntil: Date.now() + config.reauthWindowMs
+    };
+
+    sessions.set(sessionId, session);
+    return session;
+  }
+
+  function setSessionCookie(res, sessionId) {
+    res.setHeader(
+      'Set-Cookie',
+      serializeCookie('float_session', sessionId, {
+        path: '/',
+        maxAge: config.sessionTtlMs / 1000,
+        httpOnly: true,
+        sameSite: 'Lax',
+        secure: config.secureCookies
+      })
+    );
+  }
+
+  function startAuthenticatedSession(res) {
+    const session = createSessionRecord();
+    setSessionCookie(res, session.id);
+    return session;
+  }
+
   function getSessionFromRequest(req) {
     const cookies = parseCookies(req.headers.cookie);
     const sessionId = cookies.float_session;
@@ -176,6 +212,10 @@ async function createApp(config) {
     }
   }
 
+  function isSetupComplete() {
+    return store.isOnboardingComplete();
+  }
+
   function buildShareUrl(req) {
     const base = config.publicBaseUrl || getRequestOrigin(req);
     return base.endsWith('/') ? base : `${base}/`;
@@ -204,6 +244,55 @@ async function createApp(config) {
       shareUrl,
       shareQrSvg
     };
+  }
+
+  async function handleBootstrapStatus(req, res) {
+    sendJson(res, 200, {
+      requiresOnboarding: !isSetupComplete(),
+      onboarding: store.getOnboarding()
+    });
+  }
+
+  async function handleBootstrapComplete(req, res) {
+    checkApiLimit(req);
+    if (!isAllowedOrigin(req, config.publicBaseUrl, config.strictOriginCheck)) {
+      throw createHttpError(403, 'Origin not allowed.');
+    }
+    if (isSetupComplete()) {
+      throw createHttpError(409, 'This Float room is already configured.');
+    }
+    if (!configPath) {
+      throw createHttpError(500, 'Setup could not persist the new password.');
+    }
+
+    const body = await readJsonBody(req, 4096);
+    const password = String(body.password || '');
+
+    if (!password) {
+      throw createHttpError(400, 'Password is required.');
+    }
+
+    const credentials = await hashPassword(password);
+    const rawConfig = await fs.promises.readFile(configPath, 'utf8');
+    const parsedConfig = rawConfig.trim() ? JSON.parse(rawConfig) : {};
+    const nextConfig = mergeConfig({
+      ...parsedConfig,
+      passwordSalt: credentials.salt,
+      passwordHash: credentials.hash
+    });
+
+    await writeJsonAtomic(configPath, nextConfig);
+    config.passwordSalt = nextConfig.passwordSalt;
+    config.passwordHash = nextConfig.passwordHash;
+
+    const onboarding = await store.completeOnboarding();
+    startAuthenticatedSession(res);
+
+    sendJson(res, 200, {
+      authenticated: true,
+      requiresOnboarding: false,
+      onboarding
+    });
   }
 
   function broadcast(type, payload) {
@@ -268,25 +357,7 @@ async function createApp(config) {
       throw createHttpError(401, 'Incorrect password.');
     }
 
-    const sessionId = randomId(24);
-    sessions.set(sessionId, {
-      id: sessionId,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + config.sessionTtlMs,
-      reauthUntil: Date.now() + config.reauthWindowMs
-    });
-
-    res.setHeader(
-      'Set-Cookie',
-      serializeCookie('float_session', sessionId, {
-        path: '/',
-        maxAge: config.sessionTtlMs / 1000,
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: config.secureCookies
-      })
-    );
-
+    startAuthenticatedSession(res);
     sendJson(res, 200, { authenticated: true });
   }
 
@@ -667,6 +738,24 @@ async function createApp(config) {
     const requestUrl = new URL(req.url, getRequestOrigin(req));
     const pathname = requestUrl.pathname;
 
+    if (req.method === 'GET' && pathname === '/api/bootstrap/status') {
+      await handleBootstrapStatus(req, res);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/bootstrap/complete') {
+      await handleBootstrapComplete(req, res);
+      return;
+    }
+
+    if (pathname.startsWith('/api/') && !isSetupComplete()) {
+      throw createHttpError(
+        409,
+        'Finish onboarding before using this Float room.',
+        'setup_required'
+      );
+    }
+
     if (req.method === 'GET' && pathname === '/') {
       await serveStaticFile(req, res, '/');
       return;
@@ -764,6 +853,12 @@ async function createApp(config) {
 
   server.on('upgrade', (req, socket, head) => {
     if (req.url !== '/ws') {
+      socket.destroy();
+      return;
+    }
+
+    if (!isSetupComplete()) {
+      socket.write('HTTP/1.1 409 Conflict\r\n\r\n');
       socket.destroy();
       return;
     }

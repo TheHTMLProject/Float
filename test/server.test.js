@@ -6,11 +6,15 @@ const assert = require('node:assert/strict');
 const { WebSocket } = require('ws');
 const { createApp } = require('../server/app');
 const { mergeConfig } = require('../server/config');
-const { hashPassword } = require('../server/utils');
+const { hashPassword, writeJsonAtomic } = require('../server/utils');
 
 async function createFixture(overrides = {}) {
   const storagePath = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'float-test-'));
-  const credentials = await hashPassword('bubble-pass');
+  const configPath = path.join(storagePath, 'runtime.json');
+  const shouldSeedPassword =
+    !Object.prototype.hasOwnProperty.call(overrides, 'passwordSalt') &&
+    !Object.prototype.hasOwnProperty.call(overrides, 'passwordHash');
+  const credentials = shouldSeedPassword ? await hashPassword('bubble-pass') : null;
   const config = mergeConfig({
     bindHost: '127.0.0.1',
     port: 0,
@@ -18,12 +22,13 @@ async function createFixture(overrides = {}) {
     reauthWindowMs: 25,
     maxUploadBytes: 1024 * 1024,
     maxStorageBytes: 4 * 1024 * 1024,
-    passwordSalt: credentials.salt,
-    passwordHash: credentials.hash,
+    passwordSalt: credentials ? credentials.salt : '',
+    passwordHash: credentials ? credentials.hash : '',
     ...overrides
   });
 
-  const app = await createApp(config);
+  await writeJsonAtomic(configPath, config);
+  const app = await createApp(config, { configPath });
   await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
   const address = app.server.address();
   const baseUrl = `http://127.0.0.1:${address.port}`;
@@ -73,6 +78,7 @@ async function createFixture(overrides = {}) {
     close,
     login,
     request,
+    configPath,
     storagePath,
     getCookie: () => cookie
   };
@@ -154,6 +160,86 @@ test('strict origin mode still rejects unknown origins while allowing expected h
       Origin: 'https://float.example.com'
     });
     assert.equal(response.status, 200);
+  } finally {
+    await fixture.close();
+  }
+});
+
+test('bootstrap status blocks protected APIs until the room is initialized', async () => {
+  const fixture = await createFixture({
+    passwordSalt: '',
+    passwordHash: ''
+  });
+
+  try {
+    let response = await fixture.request('/api/bootstrap/status');
+    assert.equal(response.status, 200);
+    let payload = await response.json();
+    assert.equal(payload.requiresOnboarding, true);
+    assert.equal(payload.onboarding.completed, false);
+
+    response = await fixture.request('/api/items');
+    assert.equal(response.status, 409);
+    payload = await response.json();
+    assert.equal(payload.code, 'setup_required');
+
+    response = await fixture.request('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        password: 'bubble-pass'
+      })
+    });
+    assert.equal(response.status, 409);
+    payload = await response.json();
+    assert.equal(payload.code, 'setup_required');
+  } finally {
+    await fixture.close();
+  }
+});
+
+test('bootstrap completion stores the first password and authenticates the room creator', async () => {
+  const fixture = await createFixture({
+    passwordSalt: '',
+    passwordHash: ''
+  });
+
+  try {
+    let response = await fixture.request('/api/bootstrap/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        password: 'fresh-pass'
+      })
+    });
+
+    assert.equal(response.status, 200);
+    let payload = await response.json();
+    assert.equal(payload.authenticated, true);
+    assert.equal(payload.requiresOnboarding, false);
+    assert.equal(payload.onboarding.completed, true);
+    assert.match(fixture.getCookie(), /^float_session=/);
+
+    const storedConfig = JSON.parse(await fs.promises.readFile(fixture.configPath, 'utf8'));
+    assert.match(storedConfig.passwordSalt, /^[a-f0-9]{32}$/);
+    assert.match(storedConfig.passwordHash, /^[a-f0-9]{128}$/);
+
+    response = await fixture.request('/api/bootstrap/status');
+    assert.equal(response.status, 200);
+    payload = await response.json();
+    assert.equal(payload.requiresOnboarding, false);
+
+    response = await fixture.request('/api/items');
+    assert.equal(response.status, 200);
+    payload = await response.json();
+    assert.deepEqual(payload.items, []);
+
+    const verified = await fixture.login('fresh-pass');
+    assert.equal(verified.status, 200);
   } finally {
     await fixture.close();
   }

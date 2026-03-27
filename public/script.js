@@ -1,6 +1,9 @@
 (function () {
   const state = {
     authenticated: false,
+    setupRequired: false,
+    onboardingActive: false,
+    onboardingStep: 0,
     items: new Map(),
     socket: null,
     reconnectTimer: null,
@@ -13,9 +16,7 @@
 
   const elements = {
     addChip: document.getElementById('add-chip'),
-    bubbleCopy: document.getElementById('bubble-copy'),
     bubbleEmpty: document.getElementById('bubble-empty'),
-    bubbleHint: document.getElementById('bubble-hint'),
     bubbleItems: document.getElementById('bubble-items'),
     bubbleStage: document.getElementById('bubble-stage'),
     clearBubble: document.getElementById('clear-bubble'),
@@ -30,6 +31,18 @@
     mobilePasteText: document.getElementById('mobile-paste-text'),
     mobileSheet: document.getElementById('mobile-sheet'),
     mobileUploadFile: document.getElementById('mobile-upload-file'),
+    onboardingFinish: document.getElementById('onboarding-finish'),
+    onboardingForm: document.getElementById('onboarding-form'),
+    onboardingOverlay: document.getElementById('onboarding-overlay'),
+    onboardingPanels: Array.from(document.querySelectorAll('#onboarding-overlay [data-step]')),
+    onboardingPassword: document.getElementById('onboarding-password'),
+    onboardingPasswordConfirm: document.getElementById('onboarding-password-confirm'),
+    onboardingProgressBar: document.getElementById('onboarding-progress-bar'),
+    onboardingSettingsBack: document.getElementById('onboarding-settings-back'),
+    onboardingStatus: document.getElementById('onboarding-status'),
+    onboardingStepLabel: document.getElementById('onboarding-step-label'),
+    onboardingSubmit: document.getElementById('onboarding-submit'),
+    onboardingTourNext: document.getElementById('onboarding-tour-next'),
     pasteForm: document.getElementById('paste-form'),
     pasteName: document.getElementById('paste-name'),
     pasteSheet: document.getElementById('paste-sheet'),
@@ -159,12 +172,97 @@
     document.documentElement.setAttribute('data-theme', state.themeDefault);
   }
 
+  function setHidden(element, hidden) {
+    element.classList.toggle('hidden', hidden);
+    element.setAttribute('aria-hidden', hidden ? 'true' : 'false');
+  }
+
   function setRoomNote(message) {
     elements.roomNote.textContent = message;
   }
 
-  function setRoomOpenNote() {
-    setRoomNote('Bubble open. Uploads, copies, and downloads stay live across devices.');
+  function syncShellState() {
+    setHidden(elements.onboardingOverlay, !state.onboardingActive);
+    setHidden(elements.lockOverlay, state.onboardingActive || state.authenticated);
+    elements.addChip.disabled = !state.authenticated || state.onboardingActive;
+    elements.settingsChip.disabled = !state.authenticated || state.onboardingActive;
+  }
+
+  function syncRoomNote() {
+    if (state.onboardingActive) {
+      if (state.onboardingStep === 0) {
+        setRoomNote('Finish setup in the browser to open this Float room.');
+        return;
+      }
+      if (state.onboardingStep === 1) {
+        setRoomNote('Float is ready. The quick tour is showing how sharing works.');
+        return;
+      }
+      setRoomNote('One more step. Finish the settings tour to enter the room.');
+      return;
+    }
+
+    if (!state.authenticated) {
+      setRoomNote('Bubble locked. Enter the room password to begin.');
+      return;
+    }
+
+    if (!state.items.size) {
+      setRoomNote(
+        isMobileSurface()
+          ? 'Bubble open. Tap Add or the bubble to float a file or pasted text.'
+          : 'Bubble open. Drag files in, paste text, or use Add.'
+      );
+      return;
+    }
+
+    const noun = state.items.size === 1 ? 'item is' : 'items are';
+    setRoomNote(`Bubble open. ${state.items.size} ${noun} drifting across the room.`);
+  }
+
+  function setOnboardingStep(step) {
+    const nextStep = clamp(step, 0, 2);
+    const progress = ['33.333%', '66.666%', '100%'];
+
+    state.onboardingStep = nextStep;
+    elements.onboardingPanels.forEach((panel, index) => {
+      panel.classList.toggle('hidden', index !== nextStep);
+    });
+    elements.onboardingStepLabel.textContent = `Step ${nextStep + 1} of 3`;
+    elements.onboardingProgressBar.style.width = progress[nextStep];
+    syncRoomNote();
+
+    if (state.onboardingActive) {
+      window.setTimeout(() => {
+        if (state.onboardingStep === 0) {
+          elements.onboardingPassword.focus();
+          return;
+        }
+        if (state.onboardingStep === 1) {
+          elements.onboardingTourNext.focus();
+          return;
+        }
+        elements.onboardingFinish.focus();
+      }, 40);
+    }
+  }
+
+  function activateOnboarding(step) {
+    state.setupRequired = true;
+    state.onboardingActive = true;
+    closeSettingsModal();
+    closeSheet(elements.mobileSheet);
+    closeSheet(elements.pasteSheet);
+    setOnboardingStep(step === undefined ? state.onboardingStep : step);
+    syncShellState();
+  }
+
+  function closeOnboarding() {
+    state.setupRequired = false;
+    state.onboardingActive = false;
+    setInlineStatus(elements.onboardingStatus, '');
+    syncShellState();
+    syncRoomNote();
   }
 
   async function apiRequest(url, options) {
@@ -180,6 +278,9 @@
       const error = new Error(payload.error || 'Request failed.');
       error.status = response.status;
       error.code = payload.code;
+      if (error.code === 'setup_required') {
+        activateOnboarding(0);
+      }
       throw error;
     }
 
@@ -187,6 +288,9 @@
   }
 
   function openSettingsModal() {
+    if (state.onboardingActive) {
+      return;
+    }
     if (!state.authenticated) {
       elements.loginPassword.focus();
       return;
@@ -219,22 +323,6 @@
   function closeSheet(sheet) {
     sheet.classList.add('hidden');
     sheet.setAttribute('aria-hidden', 'true');
-  }
-
-  function updateBubbleCopy() {
-    const count = state.items.size;
-    if (!state.authenticated) {
-      elements.bubbleHint.textContent = 'Enter the room password to upload, paste, copy, and download.';
-      return;
-    }
-    if (!count) {
-      elements.bubbleHint.textContent = isMobileSurface()
-        ? 'Tap the bubble to upload a file or paste copied text.'
-        : 'Drag files into the bubble, paste copied text, or use Add.';
-      return;
-    }
-    const noun = count === 1 ? 'item is' : 'items are';
-    elements.bubbleHint.textContent = `${count} ${noun} drifting inside the room.`;
   }
 
   function createHomePosition(index, total, seedA, seedB, seedC, seedD) {
@@ -305,30 +393,44 @@
     const mobileScale = isMobileSurface() ? 0.82 : 1;
     const crowdScale = total > 6 ? Math.max(0.5, 1 - (total - 6) * 0.048) : 1;
     const size = Math.round(
-      (90 + Math.min(46, Math.log2((item.size || 1) + 2) * 6) + seedA * 16) *
+      (92 + Math.min(44, Math.log2((item.size || 1) + 2) * 5.5) + seedA * 14) *
         mobileScale *
         crowdScale
     );
     const home = createHomePosition(index, total, seedA, seedB, seedC, seedD);
 
     return {
+      createdAtMs: new Date(item.createdAt || Date.now()).getTime(),
       size,
       width: size,
-      height: Math.round(size * (0.56 + seedB * 0.08)),
+      height: Math.round(size * (0.68 + seedB * 0.09)),
       homeX: home.x,
       homeY: home.y,
-      driftXAmplitude: 0.016 + seedC * 0.022,
-      driftYAmplitude: 0.012 + seedD * 0.02,
-      driftXSpeed: 0.00008 + seedE * 0.00005,
-      driftYSpeed: 0.00006 + seedA * 0.00005,
+      driftXAmplitude: 0.014 + seedC * 0.024,
+      driftYAmplitude: 0.011 + seedD * 0.02,
+      driftXSpeed: 0.00007 + seedE * 0.00004,
+      driftYSpeed: 0.00005 + seedA * 0.00005,
       driftXPhase: seedB * Math.PI * 2,
       driftYPhase: seedC * Math.PI * 2,
-      bobAmplitude: 0.012 + seedF * 0.02,
-      bobSpeed: 0.00014 + seedD * 0.00008,
+      bobAmplitude: 0.014 + seedF * 0.022,
+      bobSpeed: 0.00012 + seedD * 0.00008,
       bobPhase: seedA * Math.PI * 2,
-      tiltAmplitude: 0.8 + seedB * 1.4,
-      tiltSpeed: 0.0001 + seedC * 0.00008,
-      tiltPhase: seedD * Math.PI * 2
+      tiltAmplitude: 0.7 + seedB * 1.3,
+      tiltSpeed: 0.00008 + seedC * 0.00007,
+      tiltPhase: seedD * Math.PI * 2,
+      introXAmplitude: 0.028 + seedA * 0.038,
+      introYAmplitude: 0.026 + seedB * 0.032,
+      introSpeed: 0.006 + seedC * 0.004,
+      introPhase: seedD * Math.PI * 2,
+      pulseAmplitude: 0.01 + seedE * 0.012,
+      pulseSpeed: 0.00011 + seedF * 0.00007,
+      pulsePhase: seedA * Math.PI * 2,
+      stretchAmplitude: 0.008 + seedB * 0.016,
+      stretchSpeed: 0.00009 + seedC * 0.00007,
+      stretchPhase: seedE * Math.PI * 2,
+      fluidDurationA: `${9 + seedA * 5}s`,
+      fluidDurationB: `${6 + seedB * 4}s`,
+      fluidDurationC: `${7 + seedC * 5}s`
     };
   }
 
@@ -337,9 +439,32 @@
     state.motion.set(item.id, motion);
 
     const article = document.createElement('article');
-    article.className = `bubble-item${item.type === 'text' ? ' kind-text' : ''}`;
+    const ageMs = Date.now() - motion.createdAtMs;
+    article.className = `bubble-item${item.type === 'text' ? ' kind-text' : ''}${ageMs < 7000 ? ' is-fresh' : ''}`;
     article.dataset.itemId = item.id;
     article.style.setProperty('--orb-size', `${motion.size}px`);
+    article.style.setProperty('--fluid-duration-a', motion.fluidDurationA);
+    article.style.setProperty('--fluid-duration-b', motion.fluidDurationB);
+    article.style.setProperty('--fluid-duration-c', motion.fluidDurationC);
+
+    const fluid = document.createElement('div');
+    fluid.className = 'bubble-item-fluid';
+    fluid.setAttribute('aria-hidden', 'true');
+
+    const lobeA = document.createElement('span');
+    lobeA.className = 'bubble-item-lobe bubble-item-lobe-a';
+
+    const lobeB = document.createElement('span');
+    lobeB.className = 'bubble-item-lobe bubble-item-lobe-b';
+
+    const lobeC = document.createElement('span');
+    lobeC.className = 'bubble-item-lobe bubble-item-lobe-c';
+
+    fluid.append(lobeA, lobeB, lobeC);
+
+    const sheen = document.createElement('div');
+    sheen.className = 'bubble-item-sheen';
+    sheen.setAttribute('aria-hidden', 'true');
 
     const mainButton = document.createElement('button');
     mainButton.className = 'bubble-item-main';
@@ -380,7 +505,7 @@
     deleteButton.dataset.itemId = item.id;
     deleteButton.setAttribute('aria-label', `Delete ${item.displayName}`);
 
-    article.append(mainButton, deleteButton);
+    article.append(fluid, sheen, mainButton, deleteButton);
     return article;
   }
 
@@ -392,7 +517,7 @@
     state.motion.clear();
     elements.bubbleItems.replaceChildren(...items.map((item, index) => createItemElement(item, items.length, index)));
     elements.bubbleEmpty.classList.toggle('hidden-empty', items.length > 0);
-    updateBubbleCopy();
+    syncRoomNote();
 
     window.requestAnimationFrame(() => {
       for (const node of elements.bubbleItems.children) {
@@ -407,6 +532,7 @@
   }
 
   function positionItems(timestamp) {
+    const now = Date.now();
     const rect = elements.bubbleStage.getBoundingClientRect();
     const centerX = rect.width * (isMobileSurface() ? 0.5 : 0.52);
     const centerY = rect.height * 0.53;
@@ -420,6 +546,8 @@
         continue;
       }
 
+      const ageMs = Math.max(0, now - motion.createdAtMs);
+      const introMix = reducedMotion ? 0 : clamp(1 - ageMs / 4600, 0, 1);
       const driftX = reducedMotion
         ? 0
         : Math.sin(timestamp * motion.driftXSpeed + motion.driftXPhase) * motion.driftXAmplitude;
@@ -432,18 +560,39 @@
       const tilt = reducedMotion
         ? 0
         : Math.sin(timestamp * motion.tiltSpeed + motion.tiltPhase) * motion.tiltAmplitude;
+      const introX = reducedMotion
+        ? 0
+        : Math.sin(ageMs * motion.introSpeed + motion.introPhase) *
+          motion.introXAmplitude *
+          introMix;
+      const introY = reducedMotion
+        ? 0
+        : Math.cos(ageMs * (motion.introSpeed * 0.84) + motion.introPhase) *
+          motion.introYAmplitude *
+          introMix;
+      const pulse = reducedMotion
+        ? 0
+        : Math.sin(timestamp * motion.pulseSpeed + motion.pulsePhase) * motion.pulseAmplitude +
+          introMix * 0.045;
+      const stretch = reducedMotion
+        ? 0
+        : Math.sin(timestamp * motion.stretchSpeed + motion.stretchPhase) *
+          motion.stretchAmplitude;
       const insetX = clamp((motion.width / 2 + 18) / spanX, 0.12, 0.42);
       const insetY = clamp((motion.height / 2 + 16) / spanY, 0.14, 0.46);
       const clamped = clampToBubble(
-        motion.homeX + driftX,
-        motion.homeY + driftY + bob,
+        motion.homeX + driftX + introX,
+        motion.homeY + driftY + bob + introY,
         insetX,
         insetY
       );
       const x = centerX + clamped.x * spanX - motion.width / 2;
       const y = centerY + clamped.y * spanY - motion.height / 2;
+      const scaleX = 1 + pulse + stretch;
+      const scaleY = 1 - pulse * 0.68 - stretch * 0.44;
 
-      node.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${tilt}deg)`;
+      node.classList.toggle('is-fresh', ageMs < 7000);
+      node.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${tilt}deg) scale(${scaleX}, ${scaleY})`;
     }
 
     state.animationFrame = window.requestAnimationFrame(positionItems);
@@ -458,19 +607,15 @@
 
   function setAuthenticated(authenticated) {
     state.authenticated = authenticated;
-    elements.lockOverlay.classList.toggle('hidden', authenticated);
-    elements.addChip.disabled = !authenticated;
-    elements.settingsChip.disabled = !authenticated;
+    syncShellState();
 
     if (!authenticated) {
       state.items.clear();
       renderItems();
-      setRoomNote('Bubble locked. Enter the room password to begin.');
-    } else {
-      setRoomOpenNote();
+      syncRoomNote();
+      return;
     }
-
-    updateBubbleCopy();
+    syncRoomNote();
   }
 
   function mergeItem(item) {
@@ -487,8 +632,8 @@
     const payload = await apiRequest('/api/items');
     state.items = new Map(payload.items.map((item) => [item.id, item]));
     setTheme(payload.themeDefault || state.themeDefault || 'auto');
-    renderItems();
     setAuthenticated(true);
+    renderItems();
   }
 
   function lockRoom(message) {
@@ -567,6 +712,69 @@
     });
   }
 
+  async function loadBootstrapStatus() {
+    const payload = await apiRequest('/api/bootstrap/status');
+
+    if (payload.requiresOnboarding) {
+      activateOnboarding(0);
+      return false;
+    }
+
+    state.setupRequired = false;
+    return true;
+  }
+
+  async function handleOnboardingSubmit(event) {
+    event.preventDefault();
+    setInlineStatus(elements.onboardingStatus, '');
+    elements.onboardingSubmit.disabled = true;
+
+    const password = elements.onboardingPassword.value;
+    const passwordConfirm = elements.onboardingPasswordConfirm.value;
+
+    if (!password) {
+      setInlineStatus(elements.onboardingStatus, 'Password is required.', 'error');
+      elements.onboardingSubmit.disabled = false;
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      setInlineStatus(elements.onboardingStatus, 'Passwords do not match.', 'error');
+      elements.onboardingSubmit.disabled = false;
+      return;
+    }
+
+    try {
+      await apiRequest('/api/bootstrap/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          password
+        })
+      });
+
+      elements.onboardingForm.reset();
+      setInlineStatus(elements.onboardingStatus, '');
+      state.setupRequired = false;
+      await refreshRoom();
+      connectSocket();
+      setOnboardingStep(1);
+      showToast('Shared password saved.');
+    } catch (error) {
+      setInlineStatus(elements.onboardingStatus, error.message, 'error');
+    } finally {
+      elements.onboardingSubmit.disabled = false;
+    }
+  }
+
+  function handleOnboardingFinish() {
+    closeOnboarding();
+    connectSocket();
+    showToast('Float is ready.');
+  }
+
   async function handleLoginSubmit(event) {
     event.preventDefault();
     setInlineStatus(elements.loginStatus, '');
@@ -596,7 +804,7 @@
   }
 
   async function uploadFiles(files) {
-    if (!state.authenticated || !files.length) {
+    if (!state.authenticated || state.onboardingActive || !files.length) {
       return;
     }
 
@@ -619,14 +827,14 @@
       }
     }
 
-    setRoomOpenNote();
+    syncRoomNote();
     if (successCount) {
       showToast(successCount === 1 ? '1 item is now floating.' : `${successCount} items are now floating.`);
     }
   }
 
   async function uploadText(text, name) {
-    if (!state.authenticated) {
+    if (!state.authenticated || state.onboardingActive) {
       return;
     }
 
@@ -644,10 +852,10 @@
       });
       mergeItem(payload.item);
       showToast('Text is now floating.');
-      setRoomOpenNote();
+      syncRoomNote();
       return payload.item;
     } catch (error) {
-      setRoomOpenNote();
+      syncRoomNote();
       showToast(error.message || 'Text could not be uploaded.', 'error');
       throw error;
     }
@@ -724,13 +932,13 @@
       }
     } finally {
       if (state.authenticated) {
-        setRoomOpenNote();
+        syncRoomNote();
       }
     }
   }
 
   async function handlePasteEvent(event) {
-    if (!state.authenticated) {
+    if (!state.authenticated || state.onboardingActive) {
       return;
     }
 
@@ -763,6 +971,9 @@
   }
 
   async function handleBubbleAction(event) {
+    if (state.onboardingActive) {
+      return;
+    }
     const button = event.target.closest('[data-action]');
     if (!button) {
       return;
@@ -965,6 +1176,9 @@
   }
 
   function handleStageClick(event) {
+    if (state.onboardingActive) {
+      return;
+    }
     if (!state.authenticated) {
       elements.loginPassword.focus();
       return;
@@ -980,6 +1194,14 @@
   }
 
   function bindEvents() {
+    elements.onboardingForm.addEventListener('submit', handleOnboardingSubmit);
+    elements.onboardingTourNext.addEventListener('click', () => {
+      setOnboardingStep(2);
+    });
+    elements.onboardingSettingsBack.addEventListener('click', () => {
+      setOnboardingStep(1);
+    });
+    elements.onboardingFinish.addEventListener('click', handleOnboardingFinish);
     elements.loginForm.addEventListener('submit', handleLoginSubmit);
     elements.reauthForm.addEventListener('submit', handleReauthSubmit);
     elements.settingsForm.addEventListener('submit', handleSettingsSave);
@@ -988,6 +1210,9 @@
     elements.settingsClose.addEventListener('click', closeSettingsModal);
     elements.refreshSettings.addEventListener('click', loadSettings);
     elements.addChip.addEventListener('click', () => {
+      if (state.onboardingActive) {
+        return;
+      }
       if (!state.authenticated) {
         elements.loginPassword.focus();
         return;
@@ -1023,21 +1248,21 @@
     elements.bubbleItems.addEventListener('click', handleBubbleAction);
     elements.bubbleStage.addEventListener('click', handleStageClick);
     elements.bubbleStage.addEventListener('dragenter', (event) => {
-      if (!state.authenticated) {
+      if (!state.authenticated || state.onboardingActive) {
         return;
       }
       event.preventDefault();
       elements.bubbleStage.classList.add('is-dropping');
     });
     elements.bubbleStage.addEventListener('dragover', (event) => {
-      if (!state.authenticated) {
+      if (!state.authenticated || state.onboardingActive) {
         return;
       }
       event.preventDefault();
       elements.bubbleStage.classList.add('is-dropping');
     });
     elements.bubbleStage.addEventListener('dragleave', (event) => {
-      if (!state.authenticated) {
+      if (!state.authenticated || state.onboardingActive) {
         return;
       }
       if (event.target === elements.bubbleStage) {
@@ -1045,7 +1270,7 @@
       }
     });
     elements.bubbleStage.addEventListener('drop', async (event) => {
-      if (!state.authenticated) {
+      if (!state.authenticated || state.onboardingActive) {
         return;
       }
       event.preventDefault();
@@ -1092,6 +1317,10 @@
     ensureAnimationLoop();
 
     try {
+      const setupComplete = await loadBootstrapStatus();
+      if (!setupComplete) {
+        return;
+      }
       await refreshRoom();
       connectSocket();
     } catch (error) {

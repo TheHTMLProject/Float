@@ -9,6 +9,20 @@ const {
   writeJsonAtomic
 } = require('./utils');
 
+function normalizeOnboardingState(input, fallbackCompleted) {
+  const completed = Boolean((input && input.completed) || fallbackCompleted);
+
+  return {
+    version:
+      Number.isInteger(input && input.version) && input.version > 0 ? input.version : 1,
+    completed,
+    completedAt:
+      completed && input && typeof input.completedAt === 'string' && input.completedAt.trim()
+        ? input.completedAt
+        : null
+  };
+}
+
 class DataStore {
   constructor(config) {
     this.config = config;
@@ -21,7 +35,11 @@ class DataStore {
         lifetimeMode: normalizeLifetimeMode(config.defaultSettings.lifetimeMode),
         expiryHours: Math.max(1, Number(config.defaultSettings.expiryHours || 24)),
         themeDefault: normalizeTheme(config.defaultSettings.themeDefault)
-      }
+      },
+      onboarding: normalizeOnboardingState(
+        null,
+        Boolean(config.passwordSalt && config.passwordHash)
+      )
     };
     this.writeChain = Promise.resolve();
   }
@@ -29,6 +47,7 @@ class DataStore {
   async init() {
     await ensureDir(this.storagePath);
     await ensureDir(this.filesPath);
+    let needsPersist = false;
 
     if (fs.existsSync(this.metadataPath)) {
       const raw = await fs.promises.readFile(this.metadataPath, 'utf8');
@@ -55,10 +74,19 @@ class DataStore {
               parsed.settings && parsed.settings.themeDefault,
               this.config.defaultSettings.themeDefault
             )
-          }
+          },
+          onboarding: normalizeOnboardingState(
+            parsed.onboarding,
+            Boolean(this.config.passwordSalt && this.config.passwordHash)
+          )
         };
+        needsPersist = !parsed.onboarding;
       }
     } else {
+      await this.persist();
+    }
+
+    if (needsPersist) {
       await this.persist();
     }
 
@@ -71,6 +99,16 @@ class DataStore {
       expiryHours: this.state.settings.expiryHours,
       themeDefault: this.state.settings.themeDefault
     };
+  }
+
+  getOnboarding() {
+    return {
+      ...this.state.onboarding
+    };
+  }
+
+  isOnboardingComplete() {
+    return Boolean(this.state.onboarding.completed);
   }
 
   getStorageUsage() {
@@ -220,6 +258,16 @@ class DataStore {
     this.applySettingsToItems();
     await this.persist();
     return this.getSettings();
+  }
+
+  async completeOnboarding(referenceTime = Date.now()) {
+    this.state.onboarding = {
+      version: 1,
+      completed: true,
+      completedAt: new Date(referenceTime).toISOString()
+    };
+    await this.persist();
+    return this.getOnboarding();
   }
 
   async pruneExpiredItems(referenceTime = Date.now()) {

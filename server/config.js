@@ -105,10 +105,6 @@ async function loadConfig(configPath) {
   const parsed = JSON.parse(raw);
   const config = mergeConfig(parsed);
 
-  if (!config.passwordSalt || !config.passwordHash) {
-    throw createHttpError(500, 'Config is missing password credentials.');
-  }
-
   return {
     configPath: resolvedPath,
     config

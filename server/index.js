@@ -4,7 +4,7 @@ const { getConfigPath, loadConfig } = require('./config');
 async function start() {
   const configPath = getConfigPath(process.argv);
   const { config } = await loadConfig(configPath);
-  const { server } = await createApp(config);
+  const { server } = await createApp(config, { configPath });
 
   server.listen(config.port, config.bindHost, () => {
     const displayHost = config.bindHost === '0.0.0.0' ? 'localhost' : config.bindHost;
