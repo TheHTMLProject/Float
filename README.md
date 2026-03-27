@@ -65,6 +65,7 @@ The installer writes `config/runtime.json`, installs dependencies, creates a `fl
 - `npm start` starts the Float server
 - `npm test` runs the automated server tests
 - `npm run init-config -- ...` writes a hashed runtime config
+- `FLOAT_PASSWORD="new-password" npm run set-password -- --config /path/to/runtime.json` updates the stored password hash
 - `./update-after-pull.sh` refreshes dependencies, reruns tests, and restarts `float.service` when present
 
 ## Notes
