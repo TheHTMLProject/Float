@@ -54,7 +54,6 @@
     shareUrl: document.getElementById('share-url'),
     storageDetail: document.getElementById('storage-detail'),
     storageSummary: document.getElementById('storage-summary'),
-    syncChip: document.getElementById('sync-chip'),
     themeDefault: document.getElementById('theme-default'),
     toastStack: document.getElementById('toast-stack'),
     uploadLimit: document.getElementById('upload-limit'),
@@ -76,6 +75,10 @@
 
   function hashUnit(value) {
     return hashString(value) / 4294967295;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
   }
 
   function formatBytes(value) {
@@ -149,12 +152,6 @@
     window.setTimeout(() => {
       toast.remove();
     }, 3200);
-  }
-
-  function setSyncState(label, connected) {
-    elements.syncChip.textContent = label;
-    elements.syncChip.disabled = true;
-    elements.syncChip.dataset.connected = connected ? 'true' : 'false';
   }
 
   function setTheme(mode) {
@@ -240,31 +237,98 @@
     elements.bubbleHint.textContent = `${count} ${noun} drifting inside the room.`;
   }
 
+  function createHomePosition(index, total, seedA, seedB, seedC, seedD) {
+    const goldenAngle = 2.399963229728653;
+    const copyBias = isMobileSurface() ? 0 : clamp(0.22 - total * 0.017, 0, 0.14);
+
+    if (total <= 1) {
+      return {
+        x: isMobileSurface() ? 0.04 : 0.24,
+        y: 0.06
+      };
+    }
+
+    const radius = Math.sqrt((index + 0.65) / (total + 0.35)) * 0.84;
+    const angle = goldenAngle * (index + 1) + seedA * 0.9;
+    const x =
+      Math.cos(angle) * radius * (0.76 + seedB * 0.12) +
+      (seedC - 0.5) * 0.11 +
+      copyBias;
+    const y =
+      Math.sin(angle) * radius * (0.58 + seedD * 0.14) +
+      (seedA - 0.5) * 0.12 +
+      0.04;
+
+    return {
+      x: clamp(x, -0.72, 0.78),
+      y: clamp(y, -0.64, 0.72)
+    };
+  }
+
+  function clampToBubble(x, y, insetX, insetY) {
+    const limitX = Math.max(0.12, 1 - insetX);
+    const limitY = Math.max(0.14, 1 - insetY);
+    let nextX = clamp(x, -limitX, limitX);
+    let nextY = clamp(y, -limitY, limitY);
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const scaledX = nextX / limitX;
+      const scaledY = nextY / limitY;
+      const topPinch = scaledY < -0.14 ? Math.abs(scaledY + 0.14) * 0.34 : 0;
+      const lowerBulge = scaledY > 0.12 ? scaledY * 0.1 : 0;
+      const skewX = scaledX * (0.92 - lowerBulge) + scaledY * 0.08;
+      const skewY = scaledY * (1.05 + topPinch) - scaledX * 0.04;
+      const score = skewX * skewX + skewY * skewY;
+
+      if (score <= 1) {
+        break;
+      }
+
+      const scale = 0.985 / Math.sqrt(score);
+      nextX *= scale;
+      nextY *= scale;
+    }
+
+    return {
+      x: nextX,
+      y: nextY
+    };
+  }
+
   function createMotionProfile(item, index, total) {
     const seedA = hashUnit(`${item.id}:a`);
     const seedB = hashUnit(`${item.id}:b`);
     const seedC = hashUnit(`${item.id}:c`);
     const seedD = hashUnit(`${item.id}:d`);
+    const seedE = hashUnit(`${item.id}:e`);
+    const seedF = hashUnit(`${item.id}:f`);
     const mobileScale = isMobileSurface() ? 0.82 : 1;
-    const crowdScale = total > 8 ? Math.max(0.64, 1 - (total - 8) * 0.035) : 1;
+    const crowdScale = total > 6 ? Math.max(0.5, 1 - (total - 6) * 0.048) : 1;
     const size = Math.round(
-      (104 + Math.min(56, Math.log2((item.size || 1) + 2) * 7) + seedA * 22) *
+      (90 + Math.min(46, Math.log2((item.size || 1) + 2) * 6) + seedA * 16) *
         mobileScale *
         crowdScale
     );
+    const home = createHomePosition(index, total, seedA, seedB, seedC, seedD);
 
     return {
       size,
-      height: Math.round(size * 0.64),
-      orbit: 0.22 + ((index % Math.max(total, 1)) / Math.max(total, 1)) * 0.46 + seedA * 0.08,
-      phase: seedB * Math.PI * 2,
-      offset: seedC * Math.PI * 2,
-      speed: (0.00008 + seedA * 0.00014) * (seedD > 0.5 ? 1 : -1),
-      vertical: 0.68 + seedB * 0.18,
-      tilt: 0.9 + seedC * 0.32,
-      wobble: 0.04 + seedD * 0.08,
-      wobbleSpeed: 0.0011 + seedB * 0.0013,
-      wobblePhase: seedA * Math.PI * 2
+      width: size,
+      height: Math.round(size * (0.56 + seedB * 0.08)),
+      homeX: home.x,
+      homeY: home.y,
+      driftXAmplitude: 0.016 + seedC * 0.022,
+      driftYAmplitude: 0.012 + seedD * 0.02,
+      driftXSpeed: 0.00008 + seedE * 0.00005,
+      driftYSpeed: 0.00006 + seedA * 0.00005,
+      driftXPhase: seedB * Math.PI * 2,
+      driftYPhase: seedC * Math.PI * 2,
+      bobAmplitude: 0.012 + seedF * 0.02,
+      bobSpeed: 0.00014 + seedD * 0.00008,
+      bobPhase: seedA * Math.PI * 2,
+      tiltAmplitude: 0.8 + seedB * 1.4,
+      tiltSpeed: 0.0001 + seedC * 0.00008,
+      tiltPhase: seedD * Math.PI * 2
     };
   }
 
@@ -335,6 +399,7 @@
         const itemId = node.dataset.itemId;
         const motion = state.motion.get(itemId);
         if (motion) {
+          motion.width = node.offsetWidth || motion.width;
           motion.height = node.offsetHeight || motion.height;
         }
       }
@@ -343,9 +408,10 @@
 
   function positionItems(timestamp) {
     const rect = elements.bubbleStage.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const bubbleRadius = Math.min(rect.width, rect.height) / 2 - 18;
+    const centerX = rect.width * (isMobileSurface() ? 0.5 : 0.52);
+    const centerY = rect.height * 0.53;
+    const spanX = rect.width * 0.35;
+    const spanY = rect.height * 0.37;
     const reducedMotion = state.reducedMotionQuery.matches;
 
     for (const node of elements.bubbleItems.children) {
@@ -354,25 +420,30 @@
         continue;
       }
 
-      const orbitBase = Math.max(motion.size * 0.36, bubbleRadius * motion.orbit);
-      const wobble = reducedMotion
+      const driftX = reducedMotion
         ? 0
-        : Math.sin(timestamp * motion.wobbleSpeed + motion.wobblePhase) * bubbleRadius * motion.wobble;
-      const maxDistance = bubbleRadius - motion.size / 2 - 10;
-      const radius = Math.max(motion.size * 0.22, Math.min(maxDistance, orbitBase + wobble));
-      const angle = motion.phase + timestamp * motion.speed;
-      let x = centerX + Math.cos(angle) * radius;
-      let y = centerY + Math.sin(angle * motion.tilt + motion.offset) * radius * motion.vertical;
-      const dx = x - centerX;
-      const dy = y - centerY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance > maxDistance) {
-        const clamp = maxDistance / (distance || 1);
-        x = centerX + dx * clamp;
-        y = centerY + dy * clamp;
-      }
+        : Math.sin(timestamp * motion.driftXSpeed + motion.driftXPhase) * motion.driftXAmplitude;
+      const driftY = reducedMotion
+        ? 0
+        : Math.cos(timestamp * motion.driftYSpeed + motion.driftYPhase) * motion.driftYAmplitude;
+      const bob = reducedMotion
+        ? 0
+        : Math.sin(timestamp * motion.bobSpeed + motion.bobPhase) * motion.bobAmplitude;
+      const tilt = reducedMotion
+        ? 0
+        : Math.sin(timestamp * motion.tiltSpeed + motion.tiltPhase) * motion.tiltAmplitude;
+      const insetX = clamp((motion.width / 2 + 18) / spanX, 0.12, 0.42);
+      const insetY = clamp((motion.height / 2 + 16) / spanY, 0.14, 0.46);
+      const clamped = clampToBubble(
+        motion.homeX + driftX,
+        motion.homeY + driftY + bob,
+        insetX,
+        insetY
+      );
+      const x = centerX + clamped.x * spanX - motion.width / 2;
+      const y = centerY + clamped.y * spanY - motion.height / 2;
 
-      node.style.transform = `translate3d(${x - motion.size / 2}px, ${y - motion.height / 2}px, 0)`;
+      node.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${tilt}deg)`;
     }
 
     state.animationFrame = window.requestAnimationFrame(positionItems);
@@ -394,7 +465,6 @@
     if (!authenticated) {
       state.items.clear();
       renderItems();
-      setSyncState('Offline', false);
       setRoomNote('Bubble locked. Enter the room password to begin.');
     } else {
       setRoomOpenNote();
@@ -447,11 +517,9 @@
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
     state.socket = socket;
-    setSyncState('Connecting', false);
 
     socket.addEventListener('open', async () => {
       state.reconnectDelay = 1000;
-      setSyncState('Live', true);
       try {
         await refreshRoom();
       } catch (error) {
@@ -488,7 +556,6 @@
     });
 
     socket.addEventListener('close', () => {
-      setSyncState('Reconnecting', false);
       if (!state.authenticated) {
         return;
       }
@@ -497,10 +564,6 @@
         connectSocket();
       }, state.reconnectDelay);
       state.reconnectDelay = Math.min(state.reconnectDelay * 1.8, 10000);
-    });
-
-    socket.addEventListener('error', () => {
-      setSyncState('Sync issue', false);
     });
   }
 

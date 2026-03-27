@@ -22,36 +22,37 @@
   --salem-800: #235836;
   --salem-900: #1e492e;
   --salem-950: #0c2717;
-  --bg: var(--boulder-50);
-  --bg-elevated: rgba(255, 255, 255, 0.84);
-  --bg-heavy: rgba(255, 255, 255, 0.94);
-  --surface-line: rgba(61, 61, 61, 0.16);
-  --surface-soft: rgba(255, 255, 255, 0.7);
+  --bg: #ffffff;
+  --bg-elevated: rgba(255, 255, 255, 0.88);
+  --bg-heavy: rgba(255, 255, 255, 0.96);
+  --surface-line: rgba(38, 38, 38, 0.1);
+  --surface-soft: rgba(248, 248, 248, 0.9);
   --text: var(--boulder-950);
-  --text-soft: rgba(38, 38, 38, 0.82);
-  --accent: var(--salem-800);
-  --accent-soft: rgba(42, 132, 74, 0.16);
+  --text-soft: rgba(38, 38, 38, 0.66);
+  --accent: var(--salem-700);
+  --accent-soft: rgba(42, 132, 74, 0.1);
   --danger: #c75e5e;
   --danger-strong: #a83838;
-  --bubble-core: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.95), rgba(225, 247, 233, 0.74) 34%, rgba(151, 222, 176, 0.24) 58%, rgba(120, 120, 120, 0.14) 100%);
-  --bubble-rim: rgba(255, 255, 255, 0.6);
-  --bubble-stage-sheen: rgba(255, 255, 255, 0.22);
-  --bubble-stage-glow: rgba(98, 198, 133, 0.08);
-  --bubble-stage-base: rgba(255, 255, 255, 0.08);
-  --item-surface: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(246, 246, 246, 0.78));
-  --item-surface-text: linear-gradient(160deg, rgba(242, 251, 245, 0.96), rgba(197, 237, 210, 0.68));
-  --item-line: rgba(61, 61, 61, 0.12);
+  --bubble-shell-radius: 41% 59% 53% 47% / 40% 37% 63% 60%;
+  --bubble-core: radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.78) 18%, rgba(241, 245, 248, 0.46) 42%, rgba(218, 226, 233, 0.18) 68%, rgba(214, 222, 231, 0.08) 100%);
+  --bubble-rim: rgba(255, 255, 255, 0.9);
+  --bubble-stage-sheen: rgba(255, 255, 255, 0.72);
+  --bubble-stage-glow: rgba(220, 226, 232, 0.58);
+  --bubble-stage-base: rgba(255, 255, 255, 0.34);
+  --item-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.16));
+  --item-surface-text: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(236, 246, 241, 0.2));
+  --item-line: rgba(255, 255, 255, 0.62);
   --item-text: var(--boulder-950);
-  --item-text-soft: rgba(38, 38, 38, 0.78);
-  --item-delete-bg: rgba(255, 255, 255, 0.9);
-  --item-delete-line: rgba(61, 61, 61, 0.12);
-  --item-accent: var(--salem-900);
-  --body-glow-top: rgba(98, 198, 133, 0.16);
-  --body-glow-bottom: rgba(120, 120, 120, 0.12);
-  --body-wash-start: rgba(255, 255, 255, 0.55);
-  --body-wash-end: rgba(255, 255, 255, 0);
-  --shadow-strong: 0 32px 90px rgba(38, 38, 38, 0.16);
-  --shadow-soft: 0 18px 45px rgba(38, 38, 38, 0.12);
+  --item-text-soft: rgba(38, 38, 38, 0.66);
+  --item-delete-bg: rgba(255, 255, 255, 0.42);
+  --item-delete-line: rgba(255, 255, 255, 0.54);
+  --item-accent: var(--salem-700);
+  --body-glow-top: rgba(255, 255, 255, 0);
+  --body-glow-bottom: rgba(247, 247, 247, 0.84);
+  --body-wash-start: #ffffff;
+  --body-wash-end: #fbfbfb;
+  --shadow-strong: 0 36px 96px rgba(20, 20, 20, 0.12);
+  --shadow-soft: 0 16px 40px rgba(20, 20, 20, 0.08);
   --focus-ring: rgba(60, 171, 100, 0.58);
   --font-main: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
 }
@@ -62,34 +63,34 @@ html[data-theme="light"] {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #101613;
-  --bg-elevated: rgba(17, 31, 24, 0.84);
-  --bg-heavy: rgba(16, 27, 21, 0.92);
-  --surface-line: rgba(225, 247, 233, 0.16);
-  --surface-soft: rgba(22, 44, 33, 0.62);
-  --text: var(--salem-50);
-  --text-soft: rgba(242, 251, 245, 0.84);
+  --bg: #000000;
+  --bg-elevated: rgba(10, 10, 10, 0.88);
+  --bg-heavy: rgba(12, 12, 12, 0.94);
+  --surface-line: rgba(255, 255, 255, 0.12);
+  --surface-soft: rgba(16, 16, 16, 0.88);
+  --text: #ffffff;
+  --text-soft: rgba(255, 255, 255, 0.72);
   --accent: var(--salem-200);
-  --accent-soft: rgba(98, 198, 133, 0.24);
-  --bubble-core: radial-gradient(circle at 30% 25%, rgba(242, 251, 245, 0.22), rgba(42, 132, 74, 0.22) 36%, rgba(12, 39, 23, 0.82) 76%, rgba(0, 0, 0, 0.92) 100%);
-  --bubble-rim: rgba(225, 247, 233, 0.18);
-  --bubble-stage-sheen: rgba(242, 251, 245, 0.08);
-  --bubble-stage-glow: rgba(42, 132, 74, 0.16);
-  --bubble-stage-base: rgba(12, 39, 23, 0.24);
-  --item-surface: linear-gradient(160deg, rgba(30, 73, 46, 0.92), rgba(12, 39, 23, 0.82));
-  --item-surface-text: linear-gradient(160deg, rgba(42, 132, 74, 0.88), rgba(12, 39, 23, 0.9));
-  --item-line: rgba(225, 247, 233, 0.16);
-  --item-text: var(--salem-50);
-  --item-text-soft: rgba(242, 251, 245, 0.84);
-  --item-delete-bg: rgba(12, 39, 23, 0.82);
-  --item-delete-line: rgba(225, 247, 233, 0.16);
-  --item-accent: var(--salem-100);
-  --body-glow-top: rgba(98, 198, 133, 0.2);
-  --body-glow-bottom: rgba(12, 39, 23, 0.34);
-  --body-wash-start: rgba(12, 39, 23, 0.42);
-  --body-wash-end: rgba(12, 39, 23, 0);
-  --shadow-strong: 0 36px 100px rgba(0, 0, 0, 0.38);
-  --shadow-soft: 0 20px 50px rgba(0, 0, 0, 0.28);
+  --accent-soft: rgba(98, 198, 133, 0.16);
+  --bubble-core: radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.18) 16%, rgba(120, 130, 145, 0.14) 36%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.02) 100%);
+  --bubble-rim: rgba(255, 255, 255, 0.36);
+  --bubble-stage-sheen: rgba(255, 255, 255, 0.18);
+  --bubble-stage-glow: rgba(255, 255, 255, 0.08);
+  --bubble-stage-base: rgba(255, 255, 255, 0.04);
+  --item-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  --item-surface-text: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(98, 198, 133, 0.06));
+  --item-line: rgba(255, 255, 255, 0.18);
+  --item-text: #ffffff;
+  --item-text-soft: rgba(255, 255, 255, 0.7);
+  --item-delete-bg: rgba(255, 255, 255, 0.08);
+  --item-delete-line: rgba(255, 255, 255, 0.18);
+  --item-accent: var(--salem-200);
+  --body-glow-top: rgba(255, 255, 255, 0);
+  --body-glow-bottom: rgba(255, 255, 255, 0.02);
+  --body-wash-start: #000000;
+  --body-wash-end: #050505;
+  --shadow-strong: 0 48px 110px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 20px 44px rgba(0, 0, 0, 0.34);
   --focus-ring: rgba(98, 198, 133, 0.72);
   --danger-strong: #ffadad;
 }
@@ -97,34 +98,34 @@ html[data-theme="dark"] {
 @media (prefers-color-scheme: dark) {
   html[data-theme="auto"] {
     color-scheme: dark;
-    --bg: #101613;
-    --bg-elevated: rgba(17, 31, 24, 0.84);
-    --bg-heavy: rgba(16, 27, 21, 0.92);
-    --surface-line: rgba(225, 247, 233, 0.16);
-    --surface-soft: rgba(22, 44, 33, 0.62);
-    --text: var(--salem-50);
-    --text-soft: rgba(242, 251, 245, 0.84);
+    --bg: #000000;
+    --bg-elevated: rgba(10, 10, 10, 0.88);
+    --bg-heavy: rgba(12, 12, 12, 0.94);
+    --surface-line: rgba(255, 255, 255, 0.12);
+    --surface-soft: rgba(16, 16, 16, 0.88);
+    --text: #ffffff;
+    --text-soft: rgba(255, 255, 255, 0.72);
     --accent: var(--salem-200);
-    --accent-soft: rgba(98, 198, 133, 0.24);
-    --bubble-core: radial-gradient(circle at 30% 25%, rgba(242, 251, 245, 0.22), rgba(42, 132, 74, 0.22) 36%, rgba(12, 39, 23, 0.82) 76%, rgba(0, 0, 0, 0.92) 100%);
-    --bubble-rim: rgba(225, 247, 233, 0.18);
-    --bubble-stage-sheen: rgba(242, 251, 245, 0.08);
-    --bubble-stage-glow: rgba(42, 132, 74, 0.16);
-    --bubble-stage-base: rgba(12, 39, 23, 0.24);
-    --item-surface: linear-gradient(160deg, rgba(30, 73, 46, 0.92), rgba(12, 39, 23, 0.82));
-    --item-surface-text: linear-gradient(160deg, rgba(42, 132, 74, 0.88), rgba(12, 39, 23, 0.9));
-    --item-line: rgba(225, 247, 233, 0.16);
-    --item-text: var(--salem-50);
-    --item-text-soft: rgba(242, 251, 245, 0.84);
-    --item-delete-bg: rgba(12, 39, 23, 0.82);
-    --item-delete-line: rgba(225, 247, 233, 0.16);
-    --item-accent: var(--salem-100);
-    --body-glow-top: rgba(98, 198, 133, 0.2);
-    --body-glow-bottom: rgba(12, 39, 23, 0.34);
-    --body-wash-start: rgba(12, 39, 23, 0.42);
-    --body-wash-end: rgba(12, 39, 23, 0);
-    --shadow-strong: 0 36px 100px rgba(0, 0, 0, 0.38);
-    --shadow-soft: 0 20px 50px rgba(0, 0, 0, 0.28);
+    --accent-soft: rgba(98, 198, 133, 0.16);
+    --bubble-core: radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.18) 16%, rgba(120, 130, 145, 0.14) 36%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.02) 100%);
+    --bubble-rim: rgba(255, 255, 255, 0.36);
+    --bubble-stage-sheen: rgba(255, 255, 255, 0.18);
+    --bubble-stage-glow: rgba(255, 255, 255, 0.08);
+    --bubble-stage-base: rgba(255, 255, 255, 0.04);
+    --item-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+    --item-surface-text: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(98, 198, 133, 0.06));
+    --item-line: rgba(255, 255, 255, 0.18);
+    --item-text: #ffffff;
+    --item-text-soft: rgba(255, 255, 255, 0.7);
+    --item-delete-bg: rgba(255, 255, 255, 0.08);
+    --item-delete-line: rgba(255, 255, 255, 0.18);
+    --item-accent: var(--salem-200);
+    --body-glow-top: rgba(255, 255, 255, 0);
+    --body-glow-bottom: rgba(255, 255, 255, 0.02);
+    --body-wash-start: #000000;
+    --body-wash-end: #050505;
+    --shadow-strong: 0 48px 110px rgba(0, 0, 0, 0.5);
+    --shadow-soft: 0 20px 44px rgba(0, 0, 0, 0.34);
     --focus-ring: rgba(98, 198, 133, 0.72);
     --danger-strong: #ffadad;
   }
@@ -144,7 +145,7 @@ body {
   font-family: var(--font-main);
   background:
     radial-gradient(circle at top, var(--body-glow-top), transparent 32%),
-    radial-gradient(circle at bottom right, var(--body-glow-bottom), transparent 34%),
+    radial-gradient(circle at bottom right, var(--body-glow-bottom), transparent 36%),
     linear-gradient(180deg, var(--body-wash-start), var(--body-wash-end));
   background-color: var(--bg);
   color: var(--text);
@@ -207,39 +208,7 @@ a:focus-visible {
 }
 
 .ambient {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(30px);
-  opacity: 0.55;
-  pointer-events: none;
-  mix-blend-mode: screen;
-}
-
-.ambient-one {
-  inline-size: min(38vw, 24rem);
-  block-size: min(38vw, 24rem);
-  background: rgba(98, 198, 133, 0.32);
-  top: -10rem;
-  left: -4rem;
-  animation: drift-one 18s ease-in-out infinite alternate;
-}
-
-.ambient-two {
-  inline-size: min(44vw, 28rem);
-  block-size: min(44vw, 28rem);
-  background: rgba(120, 120, 120, 0.24);
-  right: -6rem;
-  top: 8vh;
-  animation: drift-two 20s ease-in-out infinite alternate;
-}
-
-.ambient-three {
-  inline-size: min(34vw, 22rem);
-  block-size: min(34vw, 22rem);
-  background: rgba(225, 247, 233, 0.36);
-  bottom: -8rem;
-  left: 18vw;
-  animation: drift-three 16s ease-in-out infinite alternate;
+  display: none;
 }
 
 .edge-bar,
@@ -338,12 +307,6 @@ a:focus-visible {
   cursor: default;
 }
 
-#sync-chip[data-connected="true"] {
-  border-color: rgba(60, 171, 100, 0.28);
-  background: linear-gradient(135deg, var(--accent-soft), var(--bg-elevated));
-  color: var(--item-accent);
-}
-
 .room-shell {
   display: grid;
   place-items: center;
@@ -354,15 +317,16 @@ a:focus-visible {
 
 .bubble-stage {
   position: relative;
-  inline-size: min(94vw, 84svh, 56rem);
-  block-size: min(94vw, 84svh, 56rem);
-  border-radius: 50%;
+  inline-size: min(92vw, 60rem);
+  aspect-ratio: 1.16 / 1;
+  border-radius: var(--bubble-shell-radius);
   overflow: hidden;
   box-shadow: var(--shadow-strong);
   outline: none;
   background:
-    radial-gradient(circle at 50% 20%, var(--bubble-stage-sheen), transparent 32%),
-    radial-gradient(circle at 50% 50%, var(--bubble-stage-glow), transparent 72%),
+    radial-gradient(circle at 22% 16%, var(--bubble-stage-sheen), transparent 20%),
+    radial-gradient(circle at 82% 72%, var(--bubble-stage-glow), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.03)),
     var(--bubble-stage-base);
   isolation: isolate;
 }
@@ -374,52 +338,80 @@ a:focus-visible {
 .drop-halo {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
+  border-radius: inherit;
 }
 
 .bubble-backdrop {
   background: var(--bubble-core);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.48),
-    inset 0 -16px 40px rgba(12, 39, 23, 0.16);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.44),
+    inset 0 -24px 54px rgba(0, 0, 0, 0.08);
+  filter: saturate(0.88) contrast(1.08);
+}
+
+.bubble-backdrop::before,
+.bubble-backdrop::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  filter: blur(28px);
+}
+
+.bubble-backdrop::before {
+  inline-size: 42%;
+  block-size: 36%;
+  top: 2%;
+  left: 12%;
+  opacity: 0.82;
+}
+
+.bubble-backdrop::after {
+  inline-size: 34%;
+  block-size: 34%;
+  right: 9%;
+  bottom: 10%;
+  opacity: 0.18;
 }
 
 .bubble-rim {
   border: 1px solid var(--bubble-rim);
   box-shadow:
-    inset 0 0 0 18px rgba(255, 255, 255, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.32),
+    inset 0 0 0 18px rgba(255, 255, 255, 0.06),
     inset 0 0 0 42px rgba(255, 255, 255, 0.02);
 }
 
 .bubble-ripple {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  opacity: 0.45;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  opacity: 0.24;
 }
 
 .bubble-ripple-a {
-  inset: 6%;
-  animation: ripple-a 12s ease-in-out infinite;
+  inset: 8% 10% 6% 8%;
+  animation: ripple-a 16s ease-in-out infinite;
 }
 
 .bubble-ripple-b {
-  inset: 12%;
-  animation: ripple-b 16s ease-in-out infinite;
+  inset: 14% 18% 10% 14%;
+  animation: ripple-b 18s ease-in-out infinite;
 }
 
 .bubble-shine-a {
-  background: radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.72), transparent 24%);
-  transform: rotate(-8deg);
+  background: radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.92), transparent 18%);
+  filter: blur(2px);
 }
 
 .bubble-shine-b {
-  background: radial-gradient(circle at 74% 80%, rgba(255, 255, 255, 0.14), transparent 18%);
+  background: radial-gradient(circle at 84% 18%, rgba(255, 255, 255, 0.22), transparent 14%);
+  filter: blur(1px);
 }
 
 .drop-halo {
-  inset: 3%;
-  border: 2px dashed rgba(60, 171, 100, 0.42);
+  inset: 2.6%;
+  border: 2px dashed rgba(60, 171, 100, 0.36);
   opacity: 0;
-  transform: scale(0.95);
+  transform: scale(0.97);
   transition:
     opacity 160ms ease,
     transform 160ms ease;
@@ -439,24 +431,25 @@ a:focus-visible {
 
 .bubble-copy {
   display: grid;
-  place-items: center;
-  padding: 20%;
-  text-align: center;
+  align-content: center;
+  justify-items: start;
+  padding: 12% 36% 14% 11%;
+  text-align: left;
   pointer-events: none;
-  z-index: 3;
+  z-index: 5;
 }
 
 .bubble-copy h1 {
   margin: 0;
-  max-inline-size: 18rem;
-  font-size: clamp(1.9rem, 3vw, 3.15rem);
-  line-height: 0.95;
+  max-inline-size: 20rem;
+  font-size: clamp(2.3rem, 5vw, 4.7rem);
+  line-height: 0.92;
   letter-spacing: -0.04em;
 }
 
 .bubble-copy p {
-  margin: 0.85rem auto 0;
-  max-inline-size: 22rem;
+  margin: 0.9rem 0 0;
+  max-inline-size: 20rem;
   color: var(--text-soft);
 }
 
@@ -471,9 +464,9 @@ a:focus-visible {
 .bubble-empty {
   display: flex;
   align-items: flex-end;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.75rem;
-  padding-bottom: 18%;
+  padding: 0 0 14% 11%;
   color: var(--text-soft);
   transition: opacity 200ms ease;
   z-index: 2;
@@ -487,9 +480,9 @@ a:focus-visible {
   inline-size: 1rem;
   block-size: 1rem;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.96), rgba(60, 171, 100, 0.72));
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.96), rgba(220, 226, 232, 0.86));
   box-shadow:
-    0 0 0 9px rgba(60, 171, 100, 0.06),
+    0 0 0 9px rgba(255, 255, 255, 0.08),
     0 14px 18px rgba(38, 38, 38, 0.08);
 }
 
@@ -502,14 +495,14 @@ a:focus-visible {
   top: 0;
   left: 0;
   inline-size: var(--orb-size, 11rem);
-  min-block-size: calc(var(--orb-size, 11rem) * 0.64);
-  border-radius: 999px;
+  min-block-size: calc(var(--orb-size, 11rem) * 0.58);
+  border-radius: 1.7rem;
   background: var(--item-surface);
   border: 1px solid var(--item-line);
   box-shadow:
-    0 20px 32px rgba(38, 38, 38, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(18px);
+    0 18px 40px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(18px) saturate(0.88);
   overflow: hidden;
   color: var(--item-text);
   transition:
@@ -524,9 +517,9 @@ a:focus-visible {
 .bubble-item:hover,
 .bubble-item:focus-within {
   box-shadow:
-    0 24px 38px rgba(38, 38, 38, 0.18),
-    0 0 0 1px rgba(60, 171, 100, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 24px 42px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
 .bubble-item-main {
@@ -534,7 +527,7 @@ a:focus-visible {
   gap: 0.35rem;
   inline-size: 100%;
   min-block-size: 100%;
-  padding: 1rem 2.6rem 0.95rem 1rem;
+  padding: 0.9rem 2.35rem 0.88rem 0.95rem;
   text-align: left;
 }
 
@@ -550,7 +543,7 @@ a:focus-visible {
 }
 
 .bubble-item-name {
-  font-size: 0.98rem;
+  font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.1;
   word-break: break-word;
@@ -566,10 +559,10 @@ a:focus-visible {
 
 .bubble-item-delete {
   position: absolute;
-  top: 0.65rem;
-  right: 0.65rem;
-  inline-size: 1.8rem;
-  block-size: 1.8rem;
+  top: 0.55rem;
+  right: 0.55rem;
+  inline-size: 1.65rem;
+  block-size: 1.65rem;
   border-radius: 50%;
   background: var(--item-delete-bg);
   border: 1px solid var(--item-delete-line);
@@ -884,7 +877,7 @@ a:focus-visible {
   }
 
   .bubble-copy {
-    padding: 18% 14%;
+    padding: 14% 30% 16% 9%;
   }
 }
 
@@ -895,16 +888,31 @@ a:focus-visible {
   }
 
   .bubble-stage {
-    inline-size: min(98vw, 74svh);
-    block-size: min(98vw, 74svh);
+    inline-size: min(96vw, 36rem);
+    aspect-ratio: 0.94 / 1;
+    border-radius: 46% 54% 51% 49% / 38% 34% 66% 62%;
+  }
+
+  .bubble-copy {
+    justify-items: center;
+    padding: 17% 12% 24%;
+    text-align: center;
   }
 
   .bubble-copy h1 {
-    font-size: clamp(1.6rem, 8vw, 2.2rem);
+    max-inline-size: 18rem;
+    font-size: clamp(1.9rem, 8vw, 2.8rem);
   }
 
   .bubble-copy p {
+    margin-left: auto;
+    margin-right: auto;
     font-size: 0.95rem;
+  }
+
+  .bubble-empty {
+    justify-content: center;
+    padding: 0 0 17%;
   }
 
   .ghost-chip {
